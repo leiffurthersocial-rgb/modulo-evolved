@@ -25,6 +25,27 @@
 | Predators  | Fox, Wolf, Lion               | Hawk    | Pike, Shark |
 | Amphibious | Crocodile, Frog               | –       | –           |
 
+## Humans
+
+- **Species:** _Homo sapiens_ is a diploid omnivore with XY sex determination, evolving under the same rules as every other species.
+- **Anatomy:**
+  - Bipedal, built for endurance rather than sprinting.
+  - Sweat-based cooling lets them run in heat when other animals must stop, which enables persistence hunting.
+  - Low bite force, offset by tools.
+  - Large brain with a high energy cost.
+  - Long childhood and heavy parental investment, so few offspring.
+- **Real loci, simplified:**
+  - Skin pigmentation (MC1R/SLC24A5-like), balancing UV damage against vitamin D, so it tracks latitude and climate.
+  - Lactase persistence (LCT-like), which is only favored when the Human impact layer has herding switched on.
+  - High-altitude adaptation (EPAS1-like).
+  - Body-proportion genes that follow Bergmann's and Allen's rules.
+- **Culture:** a second inheritance channel alongside genes. Bands hold tool and foraging know-how that spreads by social learning, both to offspring and sideways between bands, much faster than genes. It can be lost when populations are small. Charts plot cultural and genetic change separately.
+- **Behavior:** band sociality, cooperative hunting and sharing, built on the heritable behavior traits.
+- **Human impact layer** (optional, part of Environment; can be switched on with or without simulated humans):
+  - Hunting pressure, habitat clearing, farming and herding (which changes the vegetation grid), and protected areas.
+  - Example scenarios: overhunting and megafauna extinction, domestication, island introductions.
+- **Labs:** humans can be edited, crossed and spliced like any species. Physics trade-offs apply: wings on a 70 kg biped don't fly. Breeding between species still requires low genetic distance.
+
 ## Input model (iPad)
 
 - **Touch:** 1-finger drag orbits, 2-finger drag pans, pinch zooms, tap selects, double-tap follows, long-press opens a context menu. Every target is at least 44 pt. Science explanations open on tap (`InfoTip`); hover tooltips only duplicate labels and shortcuts.
@@ -34,9 +55,9 @@
 ## Milestones
 
 1. **Scaffold and design system.** Shell, tokens, docked panels, command palette, CI, Vercel. ✅
-2. **Genetics engine and tests.** Mendelian ratios, Hardy–Weinberg, recombination vs map distance, drift ∝ 1/N, inbreeding depression.
-3. **3D world and agents.** Worker sim loop, instanced procedural creatures, walk/swim/fly motion, follow camera.
-4. **Ecology and environments.** Energy flow, biomass grids, predation, disease, seasons, catastrophes, behavior genetics.
+2. **Genetics engine and tests.** Includes the human genome template. Mendelian ratios, Hardy–Weinberg, recombination vs map distance, drift ∝ 1/N, inbreeding depression.
+3. **3D world and agents.** Worker sim loop, instanced procedural creatures, walk/swim/fly motion and a bipedal gait, follow camera.
+4. **Ecology and environments.** Energy flow, biomass grids, predation, disease, seasons, catastrophes, behavior genetics, human culture and the Human impact layer.
 5. **Genome Editor and Cross Lab.** Live phenotype preview, Punnett squares, offspring distributions, lines, undo/redo.
 6. **Splice Lab.** Modular parts, derived anatomy stats, release into the world.
 7. **Charts and phylogeny.** uPlot charts, live tree, species-split detection, inspector.
