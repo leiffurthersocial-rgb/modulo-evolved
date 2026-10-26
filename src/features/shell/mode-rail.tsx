@@ -12,6 +12,7 @@ export function ModeRail() {
   return (
     <nav
       aria-label="Workspaces"
+      data-tour="rail"
       className="absolute top-1/2 left-[max(env(safe-area-inset-left),12px)] z-20 flex -translate-y-1/2 flex-col gap-1 rounded-xl border border-border p-1.5 shadow-panel glass"
     >
       {MODES.map((m) => {

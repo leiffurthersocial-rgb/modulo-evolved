@@ -37,9 +37,9 @@ export function useGlobalHotkeys() {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.repeat) return;
       const combo = eventToCombo(e);
-      const { paletteOpen, shortcutsOpen } = useUi.getState();
+      const { paletteOpen, shortcutsOpen, dialog, tourStep } = useUi.getState();
       // While a modal is open only the palette toggle is global; the dialog handles Esc.
-      if ((paletteOpen || shortcutsOpen) && combo !== "mod+k") return;
+      if ((paletteOpen || shortcutsOpen || dialog || tourStep !== null) && combo !== "mod+k") return;
       if (isTypingTarget(e.target) && (!combo.startsWith("mod+") || combo.endsWith("+z"))) return;
       // Buttons consume Space for activation; don't double-fire play/pause.
       if (combo === "space" && e.target instanceof HTMLButtonElement) return;

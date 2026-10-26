@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?nowelcome&agents=300");
   await expect(page.getByRole("toolbar", { name: "Time controls" })).toBeVisible();
 });
 
@@ -53,4 +53,28 @@ test("interactive targets meet the 44px touch minimum", async ({ page }) => {
       .filter((t) => !t.expanded && (t.w < 43.5 || t.h < 43.5)),
   );
   expect(small).toEqual([]);
+});
+
+test("onboarding: welcome, tour and new-world dialog", async ({ page }) => {
+  await page.goto("/?agents=300");
+  await expect(page.getByText("Evolution you can touch.")).toBeVisible({ timeout: 30_000 });
+  await page.getByRole("button", { name: /Take the 1-minute tour/ }).click();
+  await expect(page.getByText("Step 1 of 6")).toBeVisible();
+  for (let i = 0; i < 5; i++) await page.getByRole("button", { name: "Next" }).click();
+  await page.getByRole("button", { name: "Done" }).click();
+  await page.getByRole("button", { name: "World menu" }).click();
+  await page.getByRole("menuitem", { name: /New world/ }).click();
+  await page.getByRole("option", { name: /Archipelago Speciation/ }).click();
+  await page.getByRole("button", { name: /Start Archipelago Speciation/ }).click();
+  await expect(page.getByText("Archipelago Speciation").first()).toBeVisible();
+});
+
+test("save and load a world on device", async ({ page }) => {
+  await page.getByRole("button", { name: "World menu" }).click();
+  await page.getByRole("menuitem", { name: /Save & load/ }).click();
+  await page.getByLabel("Save name").fill("E2E world");
+  await page.getByRole("button", { name: /Save world/ }).click();
+  await expect(page.getByText("E2E world")).toBeVisible({ timeout: 20_000 });
+  await page.getByText("E2E world").click();
+  await expect(page.getByText(/Loaded world/)).toBeVisible({ timeout: 20_000 });
 });

@@ -8,7 +8,16 @@ import { useUi } from "@/state/ui-store";
 import { useSim } from "@/state/sim-store";
 import { getCommands, type CommandGroup } from "../commands/commands";
 
-const GROUP_ORDER: CommandGroup[] = ["Simulation", "Camera", "Events", "Edit", "Navigate", "Panels", "Help"];
+const GROUP_ORDER: CommandGroup[] = [
+  "World",
+  "Simulation",
+  "Camera",
+  "Events",
+  "Edit",
+  "Navigate",
+  "Panels",
+  "Help",
+];
 
 export function CommandPalette() {
   const open = useUi((s) => s.paletteOpen);

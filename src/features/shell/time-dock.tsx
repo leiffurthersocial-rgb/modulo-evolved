@@ -27,6 +27,7 @@ export function TimeDock() {
     <div
       role="toolbar"
       aria-label="Time controls"
+      data-tour="time"
       className="absolute bottom-[max(env(safe-area-inset-bottom),12px)] left-1/2 z-20 flex h-14 -translate-x-1/2 items-center gap-1 rounded-xl border border-border px-1.5 shadow-panel glass"
     >
       <Tooltip content="Slower" shortcut="[">

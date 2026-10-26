@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { AdaptiveDpr, CameraControls, PerformanceMonitor } from "@react-three/drei";
 import { useWorld } from "@/sim/world-store";
+import { renderProfile, useSettings } from "@/state/settings-store";
 import { sim } from "@/sim/client";
 import { Creatures } from "./creatures/creatures";
 import { renderAgents } from "./creatures/render-state";
@@ -17,16 +18,19 @@ const HOME = { pos: [120, 120, 150] as const, target: [0, 0, 10] as const };
 export default function WorldScene() {
   const info = useWorld((s) => s.info);
   const selectedId = useWorld((s) => s.selectedId);
+  const quality = useSettings((s) => s.quality);
+  const degraded = useSettings((s) => s.degraded);
+  const profile = renderProfile(quality, degraded);
   return (
     <Canvas
-      shadows
-      dpr={[1, 2]}
+      shadows={profile.shadows}
+      dpr={profile.dpr}
       camera={{ position: [...HOME.pos], fov: 45, near: 0.3, far: 1400 }}
       gl={{ antialias: true, powerPreference: "high-performance" }}
       className="touch-none"
       aria-label="3D world view"
     >
-      <PerformanceMonitor />
+      <PerformanceMonitor onDecline={() => useSettings.getState().set({ degraded: true })} />
       <AdaptiveDpr pixelated={false} />
       <color attach="background" args={["#0b1016"]} />
       <fog attach="fog" args={["#0b1016", 200, 460]} />

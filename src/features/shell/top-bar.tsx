@@ -1,6 +1,10 @@
 "use client";
 
-import { Command, Keyboard } from "lucide-react";
+import { Command, Compass, FolderOpen, Globe2, Keyboard, Link2, Menu, Settings } from "lucide-react";
+import { DropdownMenu } from "radix-ui";
+import { copyText, shareUrl } from "@/persistence/share";
+import { useScenario } from "@/sim/scenario-store";
+import { useEnv } from "@/state/env-store";
 import { Button } from "@/ui/button";
 import { Tooltip } from "@/ui/tooltip";
 import { useUi } from "@/state/ui-store";
@@ -38,8 +42,10 @@ export function TopBar() {
       </div>
 
       <div className="pointer-events-auto flex h-14 items-center gap-1 rounded-lg border border-border px-1 shadow-panel glass">
+        <WorldMenu />
         <Tooltip content="Command palette" shortcut="mod+k" side="bottom">
           <Button
+            data-tour="commands"
             variant="ghost"
             className="h-11 gap-2 px-3 text-fg-muted"
             onClick={() => setPaletteOpen(true)}
@@ -83,5 +89,56 @@ function Logo() {
         strokeLinecap="round"
       />
     </svg>
+  );
+}
+
+function WorldMenu() {
+  const ui = useUi.getState();
+  const item =
+    "focus-ring flex h-11 cursor-pointer items-center gap-3 rounded-md px-3 text-sm text-fg-muted outline-none data-[highlighted]:bg-surface-3 data-[highlighted]:text-fg";
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <Button
+          variant="ghost"
+          className="h-11 gap-2 px-3 text-fg-muted"
+          aria-label="World menu"
+          data-tour="menu"
+        >
+          <Menu />
+          <span className="hidden text-sm md:inline">World</span>
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="end"
+          sideOffset={8}
+          className="z-50 w-60 animate-pop-in rounded-lg border border-border p-1 shadow-panel glass"
+        >
+          <DropdownMenu.Item className={item} onSelect={() => ui.setDialog("newWorld")}>
+            <Globe2 className="size-4" /> New world…
+          </DropdownMenu.Item>
+          <DropdownMenu.Item className={item} onSelect={() => ui.setDialog("saves")}>
+            <FolderOpen className="size-4" /> Save &amp; load…
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            className={item}
+            onSelect={() => {
+              const { scenarioId, seed } = useScenario.getState();
+              void copyText(shareUrl({ scenario: scenarioId, seed, env: useEnv.getState().settings() }));
+            }}
+          >
+            <Link2 className="size-4" /> Copy share link
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator className="my-1 h-px bg-border" />
+          <DropdownMenu.Item className={item} onSelect={() => ui.setTourStep(0)}>
+            <Compass className="size-4" /> Guided tour
+          </DropdownMenu.Item>
+          <DropdownMenu.Item className={item} onSelect={() => ui.setDialog("settings")}>
+            <Settings className="size-4" /> Settings
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }

@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BookOpen, Dna, GitMerge, Redo2, Save, Scissors, Undo2, ArrowLeftRight } from "lucide-react";
+import { BookOpen, Dna, GitMerge, Link2, Redo2, Save, Scissors, Undo2, ArrowLeftRight } from "lucide-react";
+import { copyText, shareUrl } from "@/persistence/share";
+import { useWorld } from "@/sim/world-store";
 import { Rng } from "@/engine/rng/rng";
 import {
   editAllele,
@@ -118,6 +120,28 @@ function EditorActions({
       <Button size="sm" onClick={() => sendToSplice(current)}>
         <Scissors /> Splice
       </Button>
+      <Tooltip content="Copy a link that opens this genome">
+        <Button
+          size="icon"
+          variant="ghost"
+          aria-label="Share genome link"
+          onClick={async () => {
+            const ok = await copyText(
+              shareUrl({
+                genome: {
+                  species: current.species,
+                  sex: current.sex,
+                  name: current.name,
+                  genome: current.genome,
+                },
+              }),
+            );
+            useWorld.getState().pushNotice(ok ? "Genome link copied." : "Couldn't access the clipboard.");
+          }}
+        >
+          <Link2 />
+        </Button>
+      </Tooltip>
       <ReleaseButton species={current.species} genome={current.genome} name={current.name} />
     </>
   );

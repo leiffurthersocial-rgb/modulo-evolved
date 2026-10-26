@@ -13,7 +13,12 @@ const WorldScene = dynamic(() => import("@/render/world-scene"), {
 
 export function Viewport() {
   return (
-    <div className="absolute inset-0" role="application" aria-roledescription="3D simulation view">
+    <div
+      className="absolute inset-0"
+      role="application"
+      aria-roledescription="3D simulation view"
+      data-tour="world"
+    >
       <WorldScene />
     </div>
   );

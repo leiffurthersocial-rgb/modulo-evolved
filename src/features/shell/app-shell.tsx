@@ -17,6 +17,12 @@ import { ContextMenu } from "../world/context-menu";
 import { Notices } from "../world/notices";
 import { useWorld } from "@/sim/world-store";
 import { useLab } from "@/state/lab-store";
+import { useSettings } from "@/state/settings-store";
+import { NewWorldDialog } from "../world/new-world-dialog";
+import { SavesDialog } from "../world/saves-dialog";
+import { SettingsDialog } from "../world/settings-dialog";
+import { Welcome } from "../onboarding/welcome";
+import { Tour } from "../onboarding/tour";
 import { sim } from "@/sim/client";
 
 export function AppShell() {
@@ -26,6 +32,11 @@ export function AppShell() {
   useEffect(() => {
     void useUi.persist.rehydrate();
     void useLab.persist.rehydrate();
+    void Promise.resolve(useSettings.persist.rehydrate()).then(() => {
+      const skip = new URLSearchParams(window.location.search).has("nowelcome");
+      if (!useSettings.getState().welcomed && !skip && !window.location.hash.includes("m="))
+        useUi.getState().setDialog("welcome");
+    });
     // Debug/test handle (used by e2e tests and for poking at the sim from the console).
     (window as unknown as { __modulo: unknown }).__modulo = { useWorld, useUi, sim };
     // Selecting an animal opens the inspector.
@@ -47,6 +58,11 @@ export function AppShell() {
         <Notices />
         <ContextMenu />
         <CommandPalette />
+        <NewWorldDialog />
+        <SavesDialog />
+        <SettingsDialog />
+        <Welcome />
+        <Tour />
         <ShortcutSheet />
       </main>
     </TooltipProvider>

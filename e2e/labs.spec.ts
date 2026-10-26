@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?nowelcome&agents=300");
   await expect(page.getByText(/\d+ animals/)).toBeVisible({ timeout: 30_000 });
 });
 

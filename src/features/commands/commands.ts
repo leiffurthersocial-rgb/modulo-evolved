@@ -6,6 +6,10 @@ import {
   Snowflake,
   Biohazard,
   Undo2,
+  Globe,
+  FolderOpen,
+  Settings,
+  Compass,
   Redo2,
   SunDim,
   XCircle,
@@ -30,7 +34,8 @@ import { useWorld } from "@/sim/world-store";
 import { useLab } from "@/state/lab-store";
 import { sim } from "@/sim/client";
 
-export type CommandGroup = "Simulation" | "Camera" | "Events" | "Edit" | "Navigate" | "Panels" | "Help";
+export type CommandGroup =
+  "World" | "Simulation" | "Camera" | "Events" | "Edit" | "Navigate" | "Panels" | "Help";
 
 export interface Command {
   id: string;
@@ -84,6 +89,39 @@ export function getCommands(): Command[] {
   const ui = useUi.getState();
   const simState = useSim.getState();
   return [
+    {
+      id: "world.new",
+      label: "New world…",
+      group: "World",
+      icon: Globe,
+      keywords: ["scenario", "restart", "reset", "seed"],
+      run: () => useUi.getState().setDialog("newWorld"),
+    },
+    {
+      id: "world.saves",
+      label: "Save & load…",
+      group: "World",
+      icon: FolderOpen,
+      shortcut: "mod+s",
+      keywords: ["export", "import", "file", "share"],
+      run: () => useUi.getState().setDialog("saves"),
+    },
+    {
+      id: "world.settings",
+      label: "Settings",
+      group: "World",
+      icon: Settings,
+      keywords: ["graphics", "quality", "battery"],
+      run: () => useUi.getState().setDialog("settings"),
+    },
+    {
+      id: "world.tour",
+      label: "Guided tour",
+      group: "Help",
+      icon: Compass,
+      keywords: ["onboarding", "tutorial", "help"],
+      run: () => useUi.getState().setTourStep(0),
+    },
     {
       id: "sim.toggle",
       label: simState.paused ? "Play simulation" : "Pause simulation",

@@ -25,6 +25,7 @@ export function Dock() {
   return (
     <aside
       aria-label="Side panel"
+      data-tour="dock"
       className={cn(
         "absolute z-10 flex animate-slide-in-right flex-col overflow-hidden rounded-xl border border-border shadow-panel glass",
         // Landscape iPad: right column between top bar and time dock.
