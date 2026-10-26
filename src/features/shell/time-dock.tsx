@@ -1,20 +1,27 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { FastForward, Pause, Play, Rewind, StepForward } from "lucide-react";
 import { Button } from "@/ui/button";
 import { Tooltip } from "@/ui/tooltip";
 import { Separator } from "@/ui/separator";
-import { SPEEDS, formatSimTime, useSim } from "@/state/sim-store";
+import { DAYS_PER_SEC_AT_1X, SPEEDS, formatSimTime, useSim } from "@/state/sim-store";
+import { useWorld } from "@/sim/world-store";
+import { sim } from "@/sim/client";
 
 export function TimeDock() {
   const paused = useSim((s) => s.paused);
   const speedIndex = useSim((s) => s.speedIndex);
-  const day = useSim((s) => Math.floor(s.day));
-  const { togglePaused, step, faster, slower } = useSim.getState();
+  const day = useWorld((s) => Math.floor(s.day));
+  const rate = useWorld((s) => s.rate);
+  const season = useWorld((s) => s.season);
+  const { togglePaused, faster, slower } = useSim.getState();
+  const step = () => {
+    useSim.getState().setPaused(true);
+    sim.step(1);
+  };
   const t = formatSimTime(day);
-
-  useSimClock();
+  const requested = SPEEDS[speedIndex] * DAYS_PER_SEC_AT_1X;
+  const throttled = !paused && rate > 0 && rate < requested * 0.8;
 
   return (
     <div
@@ -66,30 +73,15 @@ export function TimeDock() {
           Y{t.year} · D{String(t.day).padStart(3, "0")}
         </span>
         <span className="text-[11px] text-fg-subtle">
-          {SPEEDS[speedIndex]}× {paused ? "· paused" : ""}
+          {paused ? "paused" : `${SPEEDS[speedIndex]}×`} · {season}
+          {throttled && (
+            <span className="text-warning" title="Your device is simulating as fast as it can">
+              {" "}
+              · max {Math.round(rate / DAYS_PER_SEC_AT_1X)}×
+            </span>
+          )}
         </span>
       </div>
     </div>
   );
-}
-
-/**
- * Placeholder clock until the simulation worker lands (milestone 3):
- * advances sim time at the selected speed without touching React every frame.
- */
-function useSimClock() {
-  const last = useRef<number | null>(null);
-  useEffect(() => {
-    let raf = 0;
-    const loop = (now: number) => {
-      const { paused, speedIndex, advance } = useSim.getState();
-      if (last.current !== null && !paused) {
-        advance(((now - last.current) / 1000) * SPEEDS[speedIndex]);
-      }
-      last.current = now;
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, []);
 }

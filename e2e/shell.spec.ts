@@ -5,13 +5,14 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByRole("toolbar", { name: "Time controls" })).toBeVisible();
 });
 
-test("renders the 3D viewport", async ({ page }) => {
+test("renders the 3D viewport and a live simulation", async ({ page }) => {
   await expect(page.locator("canvas")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/\d+ animals/)).toBeVisible({ timeout: 20_000 });
 });
 
 test("touch: tap controls toggle play/pause and switch workspaces", async ({ page }) => {
-  await page.getByRole("button", { name: "Play" }).tap();
-  await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
+  await page.getByRole("button", { name: "Pause" }).tap();
+  await expect(page.getByRole("button", { name: "Play" })).toBeVisible();
 
   await page.getByRole("button", { name: "Splice Lab" }).tap();
   await expect(page.getByRole("heading", { name: "Splice Lab" })).toBeVisible();
@@ -20,7 +21,7 @@ test("touch: tap controls toggle play/pause and switch workspaces", async ({ pag
 test("keyboard: shortcuts drive the app", async ({ page }) => {
   await page.locator("canvas").waitFor();
   await page.keyboard.press("Space");
-  await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Play" })).toBeVisible();
 
   await page.keyboard.press("3");
   await expect(page.getByRole("heading", { name: "Cross Lab" })).toBeVisible();

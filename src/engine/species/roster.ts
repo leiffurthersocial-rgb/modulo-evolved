@@ -63,7 +63,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       freqS: 0,
     },
     color: "#c4a484",
-    initial: 44,
+    initial: 40,
     blurb: "Fast-breeding grazer. Its huge ears trade heat loss for early warning.",
   },
   deer: {
@@ -122,7 +122,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       freqS: 0,
     },
     color: "#a0522d",
-    initial: 26,
+    initial: 45,
     blurb: "Herd browser. Stags grow antlers each year, a costly ornament shaped by sexual selection.",
   },
   zebra: {
@@ -181,7 +181,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       freqS: 0.95,
     },
     color: "#e5e5e5",
-    initial: 22,
+    initial: 40,
     blurb: "Grazer of hot grasslands. Stripes likely deter biting flies and aid thermoregulation.",
   },
   elephant: {
@@ -274,7 +274,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       brain: 0.3,
       sweat: 0,
     },
-    maxPreyRatio: 0.05,
+    maxPreyRatio: 0.02,
     parts: {
       torso: { kind: "quad", w: 0.45, h: 0.5 },
       head: { kind: "mammal", size: 0.4, neck: 0.05 },
@@ -299,7 +299,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       freqS: 0.1,
     },
     color: "#6b5a4a",
-    initial: 16,
+    initial: 30,
     blurb: "Rooting omnivore with an exceptional nose. Eats roots, carrion and small animals.",
   },
   bear: {
@@ -358,7 +358,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       freqS: 0,
     },
     color: "#7a4e2d",
-    initial: 5,
+    initial: 3,
     blurb: "Solitary omnivore. Builds fat reserves to survive lean winters.",
   },
   human: {
@@ -417,7 +417,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       freqS: 0,
     },
     color: "#e0a370",
-    initial: 18,
+    initial: 20,
     blurb: "Bipedal endurance runner. Sweating, tools and cumulative culture compensate for a weak bite.",
   },
   fox: {
@@ -425,7 +425,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
     name: "Red fox",
     latin: "Vulpes vulpes",
     clade: "mammal",
-    diet: "carnivore",
+    diet: "omnivore",
     sexSystem: "XY",
     endotherm: true,
     massKg: 5.5,
@@ -456,7 +456,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       torso: { kind: "quad", w: 0.32, h: 0.36 },
       head: { kind: "mammal", size: 0.3, neck: 0.15 },
       jaw: { kind: "long", len: 0.24, biteK: 2.0 },
-      teeth: { kind: "carnassial", biteMult: 1.2, meat: 1, plant: 0.3 },
+      teeth: { kind: "carnassial", biteMult: 1.2, meat: 1, plant: 0.65 },
       eyes: { size: 0.05, forward: 0.7, night: 0.9 },
       ears: { kind: "pointed", size: 0.22, hearingK: 1.2 },
       forelimbs: { kind: "cursorial", len: 0.45, thick: 0.04 },
@@ -476,7 +476,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       freqS: 0,
     },
     color: "#e2722d",
-    initial: 10,
+    initial: 8,
     blurb: "Solitary mesopredator of rabbits, birds and frogs. Hunts by ear at night.",
   },
   wolf: {
@@ -535,7 +535,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       freqS: 0.05,
     },
     color: "#9ca3af",
-    initial: 9,
+    initial: 6,
     blurb: "Cooperative endurance hunter. Packs bring down prey many times a single wolf's mass.",
   },
   lion: {
@@ -594,7 +594,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       freqS: 0,
     },
     color: "#d4a656",
-    initial: 7,
+    initial: 3,
     blurb: "Social ambush predator. Males' manes are an honest signal of condition.",
   },
   crocodile: {
@@ -653,7 +653,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       freqS: 0.6,
     },
     color: "#6b8e23",
-    initial: 5,
+    initial: 3,
     blurb: "Ambush predator at the water's edge. Nest temperature, not chromosomes, sets offspring sex.",
   },
   frog: {
@@ -712,7 +712,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       freqS: 0.5,
     },
     color: "#84cc16",
-    initial: 34,
+    initial: 30,
     blurb: "Amphibian insectivore. Breathes partly through moist skin, so it must stay near water.",
   },
   sparrow: {
@@ -771,7 +771,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       freqS: 0.5,
     },
     color: "#b08968",
-    initial: 34,
+    initial: 30,
     blurb: "Seed-eating songbird. Low wing loading makes it agile but vulnerable to hawks.",
   },
   duck: {
@@ -830,7 +830,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       freqS: 0.3,
     },
     color: "#2e8b57",
-    initial: 18,
+    initial: 16,
     blurb:
       "Dabbling omnivore at home on land, water and air. Drakes' green heads are a sexually selected ornament.",
   },
@@ -890,7 +890,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       freqS: 0.2,
     },
     color: "#b5532c",
-    initial: 7,
+    initial: 5,
     blurb: "Soaring raptor with eyesight several times sharper than ours. Broad wings, low wing loading.",
   },
   sardine: {
@@ -949,7 +949,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       freqS: 0.3,
     },
     color: "#60a5fa",
-    initial: 54,
+    initial: 50,
     blurb: "Schooling planktivore at the base of the marine food web. Safety in numbers.",
   },
   pike: {
@@ -1008,7 +1008,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       freqS: 0.7,
     },
     color: "#65a30d",
-    initial: 9,
+    initial: 8,
     blurb: "Lie-in-wait ambush predator. Barred camouflage and explosive acceleration.",
   },
   shark: {
@@ -1067,7 +1067,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
       freqS: 0,
     },
     color: "#64748b",
-    initial: 4,
+    initial: 3,
     blurb: "Apex marine predator. Senses electric fields and smells blood from far away.",
   },
 };

@@ -5,12 +5,20 @@ import { Button } from "@/ui/button";
 import { Tooltip } from "@/ui/tooltip";
 import { useUi } from "@/state/ui-store";
 import { MODES } from "../commands/commands";
+import { useWorld } from "@/sim/world-store";
+import { scenarioById } from "@/engine/sim/scenarios";
 
 export function TopBar() {
   const mode = useUi((s) => s.mode);
   const setPaletteOpen = useUi((s) => s.setPaletteOpen);
   const setShortcutsOpen = useUi((s) => s.setShortcutsOpen);
   const current = MODES.find((m) => m.id === mode)!;
+  const agents = useWorld((s) => s.agentCount);
+  const species = useWorld((s) => Object.values(s.speciesCounts).filter((n) => (n ?? 0) > 0).length);
+  const lineages = useWorld(
+    (s) => s.lineages.filter((l) => l.extinctDay === null && (s.lineageCounts[l.id] ?? 0) > 0).length,
+  );
+  const scenario = useWorld((s) => (s.info ? scenarioById(s.info.scenario).name : ""));
 
   return (
     <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 pt-[max(env(safe-area-inset-top),12px)] safe-px">
@@ -18,7 +26,14 @@ export function TopBar() {
         <Logo />
         <div className="flex flex-col leading-tight">
           <span className="text-sm font-semibold tracking-tight">Modulo Evolved</span>
-          <span className="text-[11px] text-fg-subtle">{current.label}</span>
+          <span className="text-[11px] text-fg-subtle">
+            {current.label}
+            {scenario && ` · ${scenario}`}
+          </span>
+        </div>
+        <div className="ml-2 hidden items-center gap-3 border-l border-border pl-3 font-mono text-[11px] text-fg-muted tabular-nums sm:flex">
+          <span title="Animals alive">{agents} animals</span>
+          <span title="Species (lineages) alive">{lineages || species} species</span>
         </div>
       </div>
 

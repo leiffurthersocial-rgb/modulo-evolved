@@ -1,12 +1,13 @@
 "use client";
 
-import { MousePointerClick, LineChart, X } from "lucide-react";
+import { LineChart, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Button } from "@/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
 import { useUi, type DockTab } from "@/state/ui-store";
 import { DOCK_TABS } from "../commands/commands";
 import { EnvironmentPanel } from "./environment-panel";
+import { InspectorPanel } from "../inspector/inspector-panel";
 
 /**
  * Docked side panel. Landscape: right-hand column. Portrait: bottom sheet.
@@ -50,11 +51,7 @@ export function Dock() {
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <TabsContent value="inspector" className="h-full">
-            <EmptyState
-              icon={<MousePointerClick className="size-6" />}
-              title="Nothing selected"
-              body="Tap an animal in the world to inspect its genome, phenotype and lineage. Double-tap to follow it."
-            />
+            <InspectorPanel />
           </TabsContent>
           <TabsContent value="environment" className="p-4">
             <EnvironmentPanel />

@@ -1,55 +1,64 @@
 import { create } from "zustand";
+import { DEFAULT_ENV, type EnvSettings, type HumanImpact } from "@/engine/sim/types";
 
-export type BiomeId = "temperate" | "savanna" | "tundra" | "rainforest" | "desert" | "archipelago";
+export type BiomeId = "temperate" | "savanna" | "tundra" | "rainforest" | "desert" | "steppe";
 
-export interface EnvParams {
-  /** Mean annual temperature, °C. */
-  temperature: number;
-  /** Relative humidity, 0–1. */
-  humidity: number;
-  /** Primary productivity multiplier, 0–2. */
-  food: number;
-  /** Seasonal amplitude, 0–1. */
-  seasonality: number;
-  disease: boolean;
-}
+type Climate = Pick<EnvSettings, "temperature" | "humidity" | "food" | "seasonality" | "uv">;
 
-export const BIOMES: Record<BiomeId, { label: string; params: EnvParams }> = {
+export const BIOMES: Record<BiomeId, { label: string; params: Climate }> = {
   temperate: {
     label: "Temperate",
-    params: { temperature: 11, humidity: 0.65, food: 1, seasonality: 0.6, disease: true },
+    params: { temperature: 11, humidity: 0.65, food: 1, seasonality: 0.6, uv: 0.35 },
   },
   savanna: {
     label: "Savanna",
-    params: { temperature: 26, humidity: 0.4, food: 0.8, seasonality: 0.5, disease: true },
+    params: { temperature: 26, humidity: 0.45, food: 0.9, seasonality: 0.35, uv: 0.85 },
   },
   tundra: {
     label: "Tundra",
-    params: { temperature: -8, humidity: 0.5, food: 0.35, seasonality: 0.9, disease: false },
+    params: { temperature: -6, humidity: 0.5, food: 0.45, seasonality: 0.9, uv: 0.15 },
   },
   rainforest: {
     label: "Rainforest",
-    params: { temperature: 27, humidity: 0.9, food: 1.7, seasonality: 0.1, disease: true },
+    params: { temperature: 27, humidity: 0.92, food: 1.6, seasonality: 0.1, uv: 0.9 },
   },
   desert: {
     label: "Desert",
-    params: { temperature: 30, humidity: 0.1, food: 0.25, seasonality: 0.4, disease: false },
+    params: { temperature: 30, humidity: 0.12, food: 0.3, seasonality: 0.4, uv: 1 },
   },
-  archipelago: {
-    label: "Archipelago",
-    params: { temperature: 20, humidity: 0.75, food: 1.1, seasonality: 0.3, disease: true },
+  steppe: {
+    label: "Steppe",
+    params: { temperature: 6, humidity: 0.35, food: 0.7, seasonality: 0.85, uv: 0.4 },
   },
 };
 
-interface EnvState extends EnvParams {
+interface EnvState extends EnvSettings {
   biome: BiomeId | "custom";
   applyBiome: (id: BiomeId) => void;
-  set: (patch: Partial<EnvParams>) => void;
+  set: (patch: Partial<EnvSettings>) => void;
+  setImpact: (patch: Partial<HumanImpact>) => void;
+  load: (env: EnvSettings, biome?: BiomeId | "custom") => void;
+  settings: () => EnvSettings;
 }
 
-export const useEnv = create<EnvState>()((set) => ({
+export const useEnv = create<EnvState>()((set, get) => ({
+  ...DEFAULT_ENV,
   biome: "temperate",
-  ...BIOMES.temperate.params,
   applyBiome: (id) => set({ biome: id, ...BIOMES[id].params }),
   set: (patch) => set({ ...patch, biome: "custom" }),
+  setImpact: (patch) => set({ impact: { ...get().impact, ...patch } }),
+  load: (env, biome = "custom") => set({ ...env, impact: { ...env.impact }, biome }),
+  settings: () => {
+    const s = get();
+    return {
+      temperature: s.temperature,
+      humidity: s.humidity,
+      food: s.food,
+      seasonality: s.seasonality,
+      disease: s.disease,
+      uv: s.uv,
+      mutationRate: s.mutationRate,
+      impact: { ...s.impact },
+    };
+  },
 }));

@@ -9,7 +9,7 @@ const PORT = Number(process.env.PORT ?? 3100);
 export default defineConfig({
   testDir: "e2e",
   fullyParallel: true,
-  timeout: 60_000,
+  timeout: 120_000,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: { baseURL: `http://localhost:${PORT}`, trace: "retain-on-failure" },

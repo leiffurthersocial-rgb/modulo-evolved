@@ -1,7 +1,7 @@
 import type { ChromosomeDef, LocusDef, TraitId } from "./types";
 
 /**
- * The shared genome architecture: 8 autosomes plus one sex chromosome, 60 loci.
+ * The shared genome architecture: 8 autosomes plus one sex chromosome, 59 loci.
  * Positions are in centiMorgans; nearby loci are linked and tend to be inherited together.
  */
 export const CHROMOSOMES: readonly ChromosomeDef[] = [

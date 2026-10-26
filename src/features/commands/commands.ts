@@ -1,6 +1,12 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
+  Crosshair,
+  Flame,
+  Snowflake,
+  Biohazard,
+  SunDim,
+  XCircle,
   Box,
   CloudSun,
   Dna,
@@ -18,8 +24,10 @@ import {
 } from "lucide-react";
 import { useUi, type DockTab, type Mode } from "@/state/ui-store";
 import { useSim } from "@/state/sim-store";
+import { useWorld } from "@/sim/world-store";
+import { sim } from "@/sim/client";
 
-export type CommandGroup = "Simulation" | "Navigate" | "Panels" | "Help";
+export type CommandGroup = "Simulation" | "Camera" | "Events" | "Navigate" | "Panels" | "Help";
 
 export interface Command {
   id: string;
@@ -71,11 +79,11 @@ export const DOCK_TABS: { id: DockTab; label: string; icon: LucideIcon; shortcut
 /** Single source of truth for actions: drives hotkeys, the palette and the shortcut sheet. */
 export function getCommands(): Command[] {
   const ui = useUi.getState();
-  const sim = useSim.getState();
+  const simState = useSim.getState();
   return [
     {
       id: "sim.toggle",
-      label: sim.paused ? "Play simulation" : "Pause simulation",
+      label: simState.paused ? "Play simulation" : "Pause simulation",
       group: "Simulation",
       icon: Pause,
       shortcut: "space",
@@ -89,7 +97,10 @@ export function getCommands(): Command[] {
       icon: StepForward,
       shortcut: ".",
       keywords: ["tick", "advance"],
-      run: () => useSim.getState().step(),
+      run: () => {
+        useSim.getState().setPaused(true);
+        sim.step(1);
+      },
     },
     {
       id: "sim.faster",
@@ -108,6 +119,61 @@ export function getCommands(): Command[] {
       shortcut: "[",
       keywords: ["slow motion", "time scale"],
       run: () => useSim.getState().slower(),
+    },
+    {
+      id: "camera.follow",
+      label: "Follow selected animal",
+      group: "Camera",
+      icon: Crosshair,
+      shortcut: "f",
+      keywords: ["track", "camera", "chase"],
+      run: () => {
+        const w = useWorld.getState();
+        w.follow(w.followId === null ? w.selectedId : null);
+      },
+    },
+    {
+      id: "camera.deselect",
+      label: "Clear selection",
+      group: "Camera",
+      icon: XCircle,
+      shortcut: "escape",
+      run: () => {
+        useWorld.getState().follow(null);
+        useWorld.getState().select(null);
+      },
+    },
+    {
+      id: "event.drought",
+      label: "Trigger drought",
+      group: "Events",
+      icon: SunDim,
+      keywords: ["catastrophe", "dry"],
+      run: () => sim.trigger("drought"),
+    },
+    {
+      id: "event.iceAge",
+      label: "Trigger ice age",
+      group: "Events",
+      icon: Snowflake,
+      keywords: ["catastrophe", "cold", "glacial"],
+      run: () => sim.trigger("iceAge"),
+    },
+    {
+      id: "event.meteor",
+      label: "Meteor strike",
+      group: "Events",
+      icon: Flame,
+      keywords: ["catastrophe", "impact", "asteroid"],
+      run: () => sim.trigger("meteor"),
+    },
+    {
+      id: "event.plague",
+      label: "Release a plague",
+      group: "Events",
+      icon: Biohazard,
+      keywords: ["catastrophe", "disease", "epidemic"],
+      run: () => sim.trigger("plague"),
     },
     ...MODES.map<Command>((m) => ({
       id: `mode.${m.id}`,

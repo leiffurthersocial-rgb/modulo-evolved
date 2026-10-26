@@ -160,7 +160,9 @@ export function computeStats(ph: Phenotype): Stats {
   // --- Energetics ---
   const bird = sp.clade === "bird";
   const bmrKJ = kleiberKJ(m, sp.endotherm, bird) * ph.metabolism * (1 + 0.3 * devCost) * (1 + 0.2 * ph.brain);
-  const fmrKJ = bmrKJ * (sp.endotherm ? 2.5 : 1.6) * (wings ? 1.1 : 1);
+  // Field metabolic rate ≈ physical activity level × BMR (humans ~1.8, wild mammals ~2.5).
+  const pal = !sp.endotherm ? 1.6 : ph.species === "human" ? 1.8 : bird ? 2.8 : 2.5;
+  const fmrKJ = bmrKJ * pal * (wings ? 1.1 : 1);
 
   // --- Thermal tolerance ---
   const cover = partOf(ph, "covering");

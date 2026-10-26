@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 
-const PreviewScene = dynamic(() => import("@/render/preview-scene"), {
+const WorldScene = dynamic(() => import("@/render/world-scene"), {
   ssr: false,
   loading: () => (
     <div className="flex h-full items-center justify-center">
@@ -14,7 +14,7 @@ const PreviewScene = dynamic(() => import("@/render/preview-scene"), {
 export function Viewport() {
   return (
     <div className="absolute inset-0" role="application" aria-roledescription="3D simulation view">
-      <PreviewScene />
+      <WorldScene />
     </div>
   );
 }

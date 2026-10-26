@@ -12,16 +12,30 @@ import { ShortcutSheet } from "./shortcut-sheet";
 import { TimeDock } from "./time-dock";
 import { TopBar } from "./top-bar";
 import { Viewport } from "./viewport";
+import { SimBridge } from "@/sim/bridge";
+import { ContextMenu } from "../world/context-menu";
+import { Notices } from "../world/notices";
+import { useWorld } from "@/sim/world-store";
+import { useLab } from "@/state/lab-store";
+import { sim } from "@/sim/client";
 
 export function AppShell() {
   useGlobalHotkeys();
   useBlockPageGestures();
   useEffect(() => {
     void useUi.persist.rehydrate();
+    void useLab.persist.rehydrate();
+    // Debug/test handle (used by e2e tests and for poking at the sim from the console).
+    (window as unknown as { __modulo: unknown }).__modulo = { useWorld, useUi, sim };
+    // Selecting an animal opens the inspector.
+    return useWorld.subscribe((s, prev) => {
+      if (s.selectedId !== null && s.selectedId !== prev.selectedId) useUi.getState().setDockTab("inspector");
+    });
   }, []);
 
   return (
     <TooltipProvider>
+      <SimBridge />
       <main className="relative h-dvh w-full overflow-hidden bg-bg">
         <Viewport />
         <ModeOverlay />
@@ -29,6 +43,8 @@ export function AppShell() {
         <ModeRail />
         <Dock />
         <TimeDock />
+        <Notices />
+        <ContextMenu />
         <CommandPalette />
         <ShortcutSheet />
       </main>
