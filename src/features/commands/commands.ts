@@ -5,6 +5,8 @@ import {
   Flame,
   Snowflake,
   Biohazard,
+  Undo2,
+  Redo2,
   SunDim,
   XCircle,
   Box,
@@ -25,9 +27,10 @@ import {
 import { useUi, type DockTab, type Mode } from "@/state/ui-store";
 import { useSim } from "@/state/sim-store";
 import { useWorld } from "@/sim/world-store";
+import { useLab } from "@/state/lab-store";
 import { sim } from "@/sim/client";
 
-export type CommandGroup = "Simulation" | "Camera" | "Events" | "Navigate" | "Panels" | "Help";
+export type CommandGroup = "Simulation" | "Camera" | "Events" | "Edit" | "Navigate" | "Panels" | "Help";
 
 export interface Command {
   id: string;
@@ -174,6 +177,22 @@ export function getCommands(): Command[] {
       icon: Biohazard,
       keywords: ["catastrophe", "disease", "epidemic"],
       run: () => sim.trigger("plague"),
+    },
+    {
+      id: "edit.undo",
+      label: "Undo genome edit",
+      group: "Edit",
+      icon: Undo2,
+      shortcut: "mod+z",
+      run: () => useLab.getState().undo(),
+    },
+    {
+      id: "edit.redo",
+      label: "Redo genome edit",
+      group: "Edit",
+      icon: Redo2,
+      shortcut: "mod+shift+z",
+      run: () => useLab.getState().redo(),
     },
     ...MODES.map<Command>((m) => ({
       id: `mode.${m.id}`,

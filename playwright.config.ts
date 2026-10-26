@@ -8,7 +8,9 @@ const PORT = Number(process.env.PORT ?? 3100);
  */
 export default defineConfig({
   testDir: "e2e",
-  fullyParallel: true,
+  // Each test runs a full simulation + WebGL; serial runs keep timings stable.
+  fullyParallel: false,
+  workers: 1,
   timeout: 120_000,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",

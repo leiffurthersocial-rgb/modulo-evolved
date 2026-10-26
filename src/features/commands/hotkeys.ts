@@ -40,7 +40,7 @@ export function useGlobalHotkeys() {
       const { paletteOpen, shortcutsOpen } = useUi.getState();
       // While a modal is open only the palette toggle is global; the dialog handles Esc.
       if ((paletteOpen || shortcutsOpen) && combo !== "mod+k") return;
-      if (isTypingTarget(e.target) && !combo.startsWith("mod+")) return;
+      if (isTypingTarget(e.target) && (!combo.startsWith("mod+") || combo.endsWith("+z"))) return;
       // Buttons consume Space for activation; don't double-fire play/pause.
       if (combo === "space" && e.target instanceof HTMLButtonElement) return;
 

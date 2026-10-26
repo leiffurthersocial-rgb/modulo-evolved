@@ -28,11 +28,11 @@ export const useUi = create<UiState>()(
       paletteOpen: false,
       shortcutsOpen: false,
       setMode: (mode) => set({ mode }),
-      setDockTab: (dockTab) => set({ dockTab, dockOpen: true }),
+      setDockTab: (dockTab) => set({ dockTab, dockOpen: true, mode: "world" }),
       toggleDockTab: (tab) => {
         const { dockOpen, dockTab } = get();
-        if (dockOpen && dockTab === tab) set({ dockOpen: false });
-        else set({ dockTab: tab, dockOpen: true });
+        if (dockOpen && dockTab === tab && get().mode === "world") set({ dockOpen: false });
+        else set({ dockTab: tab, dockOpen: true, mode: "world" });
       },
       toggleDock: () => set({ dockOpen: !get().dockOpen }),
       setPaletteOpen: (paletteOpen) => set({ paletteOpen }),

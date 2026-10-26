@@ -42,6 +42,7 @@ interface WorldState {
   follow: (id: number | null) => void;
   openContextMenu: (m: { id: number; x: number; y: number } | null) => void;
   dismissNotice: (key: number) => void;
+  pushNotice: (text: string, kind?: string) => void;
 }
 
 let noticeKey = 1;
@@ -106,4 +107,6 @@ export const useWorld = create<WorldState>()((set, get) => ({
   follow: (id) => set({ followId: id, selectedId: id ?? get().selectedId, contextMenu: null }),
   openContextMenu: (contextMenu) => set({ contextMenu }),
   dismissNotice: (key) => set({ notices: get().notices.filter((n) => n.key !== key) }),
+  pushNotice: (text, kind = "event") =>
+    set({ notices: [...get().notices, { day: get().day, text, kind, key: noticeKey++ }].slice(-40) }),
 }));

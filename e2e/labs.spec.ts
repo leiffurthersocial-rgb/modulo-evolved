@@ -1,0 +1,32 @@
+import { expect, test } from "@playwright/test";
+
+test.beforeEach(async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText(/\d+ animals/)).toBeVisible({ timeout: 30_000 });
+});
+
+test("genome editor: open a wild genome, edit an allele, undo", async ({ page }) => {
+  await page.getByRole("button", { name: "Genome Editor" }).click();
+  await page.getByRole("button", { name: "Choose genome" }).first().click();
+  await page.getByRole("tab", { name: /Wild type/ }).click();
+  await page.getByRole("button", { name: "Plains zebra" }).click();
+  await expect(page.getByText("Wild plains zebra", { exact: false }).first()).toBeVisible();
+  await page.getByRole("button", { name: "More copies" }).first().click();
+  await expect(page.getByText("1 loci edited")).toBeVisible();
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(page.getByText("unedited")).toBeVisible();
+});
+
+test("cross lab: Punnett square and a bred litter", async ({ page }) => {
+  await page.getByRole("button", { name: "Cross Lab", exact: true }).click();
+  await page.getByRole("button", { name: /Choose mother/ }).click();
+  await page.getByRole("tab", { name: /Wild type/ }).click();
+  await page.getByRole("button", { name: "Rabbit" }).click();
+  await page.getByRole("button", { name: /Choose father/ }).click();
+  await page.getByRole("tab", { name: /Wild type/ }).click();
+  await page.getByRole("button", { name: "Rabbit" }).click();
+  await expect(page.getByText(/hybrid fertility 100%/)).toBeVisible();
+  await expect(page.getByRole("table")).toBeVisible();
+  await page.getByRole("button", { name: /Breed litter/ }).click();
+  await expect(page.getByText(/viability \d+%/).first()).toBeVisible();
+});

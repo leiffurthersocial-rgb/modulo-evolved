@@ -101,7 +101,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
     parts: {
       torso: { kind: "quad", w: 0.36, h: 0.45 },
       head: { kind: "mammal", size: 0.28, neck: 0.42, antlers: true },
-      jaw: { kind: "long", len: 0.22, biteK: 0.9 },
+      jaw: { kind: "long", len: 0.22, biteK: 0.45 },
       teeth: { kind: "grinding", biteMult: 1, meat: 0.05, plant: 1 },
       eyes: { size: 0.05, forward: 0.1, night: 0.6 },
       ears: { kind: "pointed", size: 0.2, hearingK: 1 },
@@ -160,7 +160,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
     parts: {
       torso: { kind: "quad", w: 0.4, h: 0.5 },
       head: { kind: "mammal", size: 0.32, neck: 0.48 },
-      jaw: { kind: "long", len: 0.3, biteK: 1.0 },
+      jaw: { kind: "long", len: 0.3, biteK: 0.5 },
       teeth: { kind: "grinding", biteMult: 1.1, meat: 0, plant: 1.1 },
       eyes: { size: 0.05, forward: 0.1, night: 0.5 },
       ears: { kind: "pointed", size: 0.2, hearingK: 1 },
@@ -219,7 +219,7 @@ export const SPECIES: Readonly<Record<SpeciesId, SpeciesDef>> = {
     parts: {
       torso: { kind: "heavy", w: 0.6, h: 0.65 },
       head: { kind: "mammal", size: 0.45, neck: 0.05, trunk: true },
-      jaw: { kind: "short", len: 0.15, biteK: 0.8 },
+      jaw: { kind: "short", len: 0.15, biteK: 0.35 },
       teeth: { kind: "tusks", biteMult: 1.2, meat: 0, plant: 1 },
       eyes: { size: 0.025, forward: 0.2, night: 0.3 },
       ears: { kind: "large", size: 0.55, hearingK: 1 },

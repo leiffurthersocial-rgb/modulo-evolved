@@ -27,8 +27,12 @@ interface LabState {
   remove: (id: string) => void;
   rename: (id: string, name: string) => void;
   edit: (g: LabGenome | null) => void;
-  /** Apply a change to the editor genome, recording undo history. */
-  commit: (g: LabGenome) => void;
+  /**
+   * Apply a change to the editor genome, recording undo history. Consecutive commits with the
+   * same `mergeKey` (e.g. one slider drag) collapse into a single undo step.
+   */
+  commit: (g: LabGenome, mergeKey?: string) => void;
+  lastMerge: string | null;
   undo: () => void;
   redo: () => void;
   setCross: (slot: "a" | "b", g: LabGenome | null) => void;
@@ -47,11 +51,17 @@ export const useLab = create<LabState>()(
       save: (g) => set({ library: [g, ...get().library.filter((x) => x.id !== g.id)].slice(0, 200) }),
       remove: (id) => set({ library: get().library.filter((x) => x.id !== id) }),
       rename: (id, name) => set({ library: get().library.map((x) => (x.id === id ? { ...x, name } : x)) }),
-      edit: (g) => set({ editor: { current: g, past: [], future: [] } }),
-      commit: (g) => {
+      edit: (g) => set({ editor: { current: g, past: [], future: [] }, lastMerge: null }),
+      lastMerge: null,
+      commit: (g, mergeKey) => {
         const e = get().editor;
+        if (mergeKey && mergeKey === get().lastMerge) {
+          set({ editor: { ...e, current: g, future: [] } });
+          return;
+        }
         set({
           editor: { current: g, past: e.current ? [...e.past, e.current].slice(-100) : e.past, future: [] },
+          lastMerge: mergeKey ?? null,
         });
       },
       undo: () => {
@@ -63,12 +73,16 @@ export const useLab = create<LabState>()(
             past: e.past.slice(0, -1),
             future: [e.current, ...e.future],
           },
+          lastMerge: null,
         });
       },
       redo: () => {
         const e = get().editor;
         if (!e.future.length || !e.current) return;
-        set({ editor: { current: e.future[0], past: [...e.past, e.current], future: e.future.slice(1) } });
+        set({
+          editor: { current: e.future[0], past: [...e.past, e.current], future: e.future.slice(1) },
+          lastMerge: null,
+        });
       },
       setCross: (slot, g) => set({ cross: { ...get().cross, [slot]: g } }),
       setSpliceBase: (g) => set({ splice: { base: g } }),

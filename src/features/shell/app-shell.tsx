@@ -20,6 +20,7 @@ import { useLab } from "@/state/lab-store";
 import { sim } from "@/sim/client";
 
 export function AppShell() {
+  const mode = useUi((s) => s.mode);
   useGlobalHotkeys();
   useBlockPageGestures();
   useEffect(() => {
@@ -41,7 +42,7 @@ export function AppShell() {
         <ModeOverlay />
         <TopBar />
         <ModeRail />
-        <Dock />
+        {mode === "world" && <Dock />}
         <TimeDock />
         <Notices />
         <ContextMenu />

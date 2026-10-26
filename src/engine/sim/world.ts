@@ -1,7 +1,7 @@
 import { Rng } from "../rng/rng";
 import { AlleleFactory } from "../genetics/alleles";
 import { crossFertility, geneticDistance } from "../genetics/distance";
-import { determineSex, fertilize, makeGamete } from "../genetics/meiosis";
+import { determineSex, fertilize, makeGamete, withKaryotype } from "../genetics/meiosis";
 import { DEFAULT_RATES, mutateGamete, scaleRates, type MutationRates } from "../genetics/mutation";
 import type { Genome, Sex } from "../genetics/types";
 import { computePhenotype } from "../anatomy/phenotype";
@@ -317,9 +317,11 @@ export class World {
     for (let i = 0; i < n; i++) {
       const sex: Sex = req.sex ?? (i % 2 === 0 ? "F" : "M");
       const sp = SPECIES[req.species];
+      // Give each individual the karyotype that matches its sex (XY/ZW).
+      const genome = withKaryotype([...req.genome.a], [...req.genome.b], sex, sp.sexSystem);
       const a = this.addAgent({
         species: req.species,
-        genome: req.genome,
+        genome,
         sex,
         lineage,
         x: cx + this.rng.normal(0, 2),
