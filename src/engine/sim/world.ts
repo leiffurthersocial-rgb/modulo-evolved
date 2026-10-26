@@ -108,6 +108,7 @@ export class World {
     this.recorder = new Recorder();
     SPECIES_IDS.forEach((id) => this.lineages.push(rootLineage(this.lineages.length, id)));
     if (!this.config.skipPopulate) this.populate();
+    for (const a of this.agents) this.lineages[a.lineage].everAlive = true;
     this.recorder.sample(this, true);
   }
 
@@ -307,6 +308,7 @@ export class World {
         parent: this.rootLineageOf(req.species),
         bornDay: this.day,
         extinctDay: null,
+        everAlive: true,
         color: SPECIES[req.species].color,
       });
     }

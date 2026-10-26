@@ -128,17 +128,15 @@ export function SpliceLab() {
   const applyPreset = async (p: (typeof PRESETS)[number]) => {
     const g = await sim.rpc<Genome | null>("founder", p.base, p.sex);
     if (!g) return;
-    useLab
-      .getState()
-      .setSpliceBase({
-        id: newId(),
-        name: `Wild ${SPECIES[p.base].name.toLowerCase()}`,
-        species: p.base,
-        sex: p.sex,
-        genome: g,
-        createdAt: Date.now(),
-        kind: "wild",
-      });
+    useLab.getState().setSpliceBase({
+      id: newId(),
+      name: `Wild ${SPECIES[p.base].name.toLowerCase()}`,
+      species: p.base,
+      sex: p.sex,
+      genome: g,
+      createdAt: Date.now(),
+      kind: "wild",
+    });
     // Apply after the base resets.
     setTimeout(() => {
       setChanges(p.changes);

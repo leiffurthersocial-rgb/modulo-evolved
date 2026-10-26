@@ -129,6 +129,8 @@ export interface Lineage {
   bornDay: number;
   extinctDay: number | null;
   color: string;
+  /** Had at least one member at some point (absent species are never "extinct"). */
+  everAlive?: boolean;
   /** Pending split candidate streak (internal). */
   splitStreak?: number;
 }

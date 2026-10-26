@@ -29,6 +29,9 @@ export function trackSpeciation(w: World) {
   for (const lin of w.lineages) {
     if (lin.extinctDay !== null) continue;
     const members = byLineage.get(lin.id) ?? [];
+    if (members.length > 0) lin.everAlive = true;
+    // Species never present in this world aren't "extinct", just absent.
+    if (members.length === 0 && !lin.everAlive) continue;
     if (members.length === 0) {
       lin.extinctDay = w.day;
       w.totals.extinctions++;
@@ -60,6 +63,7 @@ export function trackSpeciation(w: World) {
         parent: lin.id,
         bornDay: w.day,
         extinctDay: null,
+        everAlive: true,
         color: shiftHue(lin.color, 40 + 70 * ((w.lineages.length * 37) % 5)),
       };
       w.lineages.push(l);

@@ -37,3 +37,12 @@ test("splice lab: a preset chimera shows derived trade-offs", async ({ page }) =
   await expect(page.getByText(/Too heavy to fly/)).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("grounded", { exact: true })).toBeVisible();
 });
+
+test("charts and phylogeny render live data", async ({ page }) => {
+  await page.getByRole("tab", { name: "Charts" }).click();
+  await expect(page.getByRole("img", { name: "Population per species" })).toBeVisible({ timeout: 30_000 });
+  await page.getByRole("button", { name: "Phylogeny" }).click();
+  await expect(page.getByRole("img", { name: "Lineage tree over simulated time" })).toBeVisible();
+  await page.getByRole("tab", { name: "Deep time" }).click();
+  await expect(page.getByRole("img", { name: /Deep-time phylogeny/ })).toBeVisible();
+});

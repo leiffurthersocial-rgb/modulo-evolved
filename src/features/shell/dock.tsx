@@ -1,6 +1,6 @@
 "use client";
 
-import { LineChart, X } from "lucide-react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Button } from "@/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
@@ -8,6 +8,7 @@ import { useUi, type DockTab } from "@/state/ui-store";
 import { DOCK_TABS } from "../commands/commands";
 import { EnvironmentPanel } from "./environment-panel";
 import { InspectorPanel } from "../inspector/inspector-panel";
+import { ChartsPanel } from "../charts/charts-panel";
 
 /**
  * Docked side panel. Landscape: right-hand column. Portrait: bottom sheet.
@@ -57,26 +58,10 @@ export function Dock() {
             <EnvironmentPanel />
           </TabsContent>
           <TabsContent value="charts" className="h-full">
-            <EmptyState
-              icon={<LineChart className="size-6" />}
-              title="No data yet"
-              body="Population, allele-frequency and biodiversity charts appear here once the simulation is running."
-            />
+            <ChartsPanel />
           </TabsContent>
         </div>
       </Tabs>
     </aside>
-  );
-}
-
-function EmptyState({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
-  return (
-    <div className="flex h-full min-h-48 flex-col items-center justify-center gap-3 p-8 text-center">
-      <div className="flex size-12 items-center justify-center rounded-xl bg-surface-3 text-fg-subtle">
-        {icon}
-      </div>
-      <p className="text-sm font-medium text-fg">{title}</p>
-      <p className="max-w-64 text-sm text-fg-muted">{body}</p>
-    </div>
   );
 }
