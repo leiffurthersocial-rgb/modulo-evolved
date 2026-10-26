@@ -24,11 +24,16 @@ test("breeding zoo: place animals by tapping, rations, fast-forward a generation
   await expect.poll(() => count(page, "human")).toBeGreaterThan(0);
   const before = await count(page, "human");
   await page.getByRole("button", { name: /Place 2 × Human/ }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Tap the ground" })).toBeVisible();
+  const banner = page.getByRole("status").filter({ hasText: "Tap the ground" });
+  await expect(banner).toBeVisible();
+  // The side panel covers part of the view (a bottom sheet in portrait): close it, then tap the
+  // middle of the paddock, where the camera is aimed.
+  await page.getByRole("button", { name: "Close side panel" }).click();
   const box = (await page.locator("canvas").boundingBox())!;
-  await page.mouse.click(box.x + box.width * 0.35, box.y + box.height * 0.6);
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
   await expect.poll(() => count(page, "human")).toBe(before + 2);
-  await page.getByRole("button", { name: "Done placing" }).click();
+  await banner.getByRole("button", { name: "Done" }).click();
+  await page.keyboard.press("b"); // reopen the Animals panel
 
   await page.getByRole("button", { name: "Fast-forward 1 generation" }).click();
   await expect(page.getByText(/Fast-forward complete/)).toBeVisible({ timeout: 90_000 });

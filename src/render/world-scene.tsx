@@ -6,6 +6,7 @@ import { AdaptiveDpr, CameraControls, PerformanceMonitor } from "@react-three/dr
 import { useWorld } from "@/sim/world-store";
 import { renderProfile, useSettings } from "@/state/settings-store";
 import { useUi } from "@/state/ui-store";
+import { useModalOpen } from "@/lib/use-modal-open";
 import { sim } from "@/sim/client";
 import { Creatures } from "./creatures/creatures";
 import { renderAgents } from "./creatures/render-state";
@@ -34,7 +35,9 @@ export default function WorldScene() {
   const degraded = useSettings((s) => s.degraded);
   const profile = renderProfile(quality, degraded);
   // Behind a lab workspace the world shows as a blurred still; the worker keeps simulating.
-  const visible = useUi((s) => s.mode === "world");
+  const inWorld = useUi((s) => s.mode === "world");
+  const covered = useModalOpen();
+  const visible = inWorld && !covered;
   return (
     <Canvas
       frameloop={visible && !profile.fps ? "always" : "demand"}

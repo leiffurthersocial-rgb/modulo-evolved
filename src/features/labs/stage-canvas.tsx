@@ -3,12 +3,15 @@
 import type { ReactNode } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ContactShadows, OrbitControls } from "@react-three/drei";
+import { useModalOpen } from "@/lib/use-modal-open";
 
 export default function StageCanvas({ children, distance }: { children: ReactNode; distance: number }) {
   const reduced =
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const covered = useModalOpen();
   return (
     <Canvas
+      frameloop={covered ? "never" : "always"}
       dpr={[1, 2]}
       camera={{ position: [distance * 0.85, distance * 0.5, distance * 0.85], fov: 38 }}
       className="touch-none"
