@@ -39,7 +39,7 @@ export function AppShell() {
         useUi.getState().setDialog("welcome");
     });
     // Debug/test handle (used by e2e tests and for poking at the sim from the console).
-    (window as unknown as { __modulo: unknown }).__modulo = { useWorld, useUi, sim };
+    (window as unknown as { __modulo: unknown }).__modulo = { useWorld, useUi, useSettings, sim };
     // Selecting an animal opens the inspector.
     return useWorld.subscribe((s, prev) => {
       if (s.selectedId !== null && s.selectedId !== prev.selectedId) useUi.getState().setDockTab("inspector");

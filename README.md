@@ -53,6 +53,10 @@ Eighteen real species, humans among them, live on a procedurally generated islan
 
 ![Breeding Zoo: placing animals, with daily rations in the Animals panel](docs/screenshots/zoo.png)
 
+All 18 species (Splice Lab chimeras use the same procedural parts):
+
+![The 18 species](docs/screenshots/species.png)
+
 The science, the simplifications and the data sources are documented in [docs/SCIENCE.md](docs/SCIENCE.md).
 
 ## Controls

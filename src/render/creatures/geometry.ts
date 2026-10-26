@@ -1,19 +1,24 @@
 import * as THREE from "three";
 
-export const GEO = { sphere: 0, cone: 1, cyl: 2, box: 3, blade: 4 } as const;
+export const GEO = { sphere: 0, cone: 1, cyl: 2, box: 3, blade: 4, taper: 5 } as const;
 export type GeoId = (typeof GEO)[keyof typeof GEO];
-export const GEO_COUNT = 5;
+export const GEO_COUNT = 6;
 
-/** Unit low-poly geometries. Cones/cylinders/blades have their base at y = 0 and extend to y = 1. */
+/**
+ * Unit low-poly geometries. Cones/cylinders/blades have their base at y = 0 and extend to y = 1.
+ * `taper` is a limb/muzzle/tail segment that narrows to half its base radius.
+ */
 export function createGeometries(): THREE.BufferGeometry[] {
   const sphere = new THREE.IcosahedronGeometry(1, 1);
   const cone = new THREE.ConeGeometry(1, 1, 6, 1);
   cone.translate(0, 0.5, 0);
-  const cyl = new THREE.CylinderGeometry(0.85, 1, 1, 6, 1);
+  const cyl = new THREE.CylinderGeometry(0.85, 1, 1, 7, 1);
   cyl.translate(0, 0.5, 0);
   const box = new THREE.BoxGeometry(1, 1, 1);
   const blade = createBlade();
-  return [sphere, cone, cyl, box, blade].map((g) => {
+  const taper = new THREE.CylinderGeometry(0.5, 1, 1, 7, 1);
+  taper.translate(0, 0.5, 0);
+  return [sphere, cone, cyl, box, blade, taper].map((g) => {
     const ng = g.index ? g.toNonIndexed() : g;
     ng.computeVertexNormals();
     return ng;
@@ -35,8 +40,9 @@ function createBlade() {
 }
 
 /**
- * Flat-shaded standard material with per-instance colour, a secondary colour and a stripe
- * pattern strength (zebra stripes, barred pike, banded crocodiles).
+ * Flat-shaded standard material with per-instance colour, a secondary colour and a pattern:
+ * 0..1 stripes (zebra, barred pike, banded crocodiles), >1 spots, <0 countershading (a pale
+ * belly in the secondary colour, on ellipsoid parts).
  */
 export function createCreatureMaterial() {
   const mat = new THREE.MeshStandardMaterial({
@@ -74,7 +80,13 @@ varying float vPattern;`,
       .replace(
         "#include <color_fragment>",
         `#include <color_fragment>
-if (vPattern > 0.01) {
+if (vPattern < -0.01) {
+  float s = smoothstep(0.05, -0.45, vLocal.y);
+  diffuseColor.rgb = mix(diffuseColor.rgb, vColor2, s * -vPattern);
+} else if (vPattern > 1.0) {
+  float n = sin(vLocal.x * 9.0 + 1.3) * sin(vLocal.y * 11.0) * sin(vLocal.z * 8.0 + 0.7);
+  diffuseColor.rgb = mix(diffuseColor.rgb, vColor2, step(0.3, n) * min(1.0, vPattern - 1.0));
+} else if (vPattern > 0.01) {
   float s = step(0.5, fract(dot(vLocal, vec3(0.25, 0.55, 1.0)) * 4.0));
   diffuseColor.rgb = mix(diffuseColor.rgb, vColor2, s * vPattern);
 }`,

@@ -9,6 +9,8 @@ import { useWorld } from "@/sim/world-store";
 import { createCreatureMaterial, createGeometries, GEO_COUNT } from "./geometry";
 import { buildRig, displayLength, type Anim, type RigPart } from "./rig";
 import { renderAgents } from "./render-state";
+import { defaultBody } from "./default-body";
+import { SPECIES_IDS } from "@/engine/species/roster";
 
 interface Slotted {
   rig: RigPart[];
@@ -24,7 +26,20 @@ interface Slotted {
   seen: number;
 }
 
-const CAP_PER_AGENT = [12, 14, 14, 6, 8];
+/**
+ * Instance slots per agent for each geometry: the most any species' rig uses, plus headroom for
+ * chimeras (which can combine parts from several species).
+ */
+const CAP_PER_AGENT = (() => {
+  const max = new Array<number>(GEO_COUNT).fill(0);
+  for (const id of SPECIES_IDS)
+    for (const sex of ["F", "M"] as const) {
+      const n = new Array<number>(GEO_COUNT).fill(0);
+      for (const p of buildRig({ ...defaultBody(id, sex), ornament: 1 })) n[p.geo]++;
+      n.forEach((v, g) => (max[g] = Math.max(max[g], v)));
+    }
+  return max.map((m) => m + 3);
+})();
 const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
 
 /** Per-part joint angle for the current gait/idle animation. */
