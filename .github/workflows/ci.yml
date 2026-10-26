@@ -37,6 +37,11 @@ jobs:
     name: iPad smoke tests (WebKit)
     needs: check
     runs-on: ubuntu-latest
+    timeout-minutes: 40
+    # Official image ships WebKit and all its system dependencies (no slow apt step).
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --user 1001
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -49,7 +54,6 @@ jobs:
         with:
           name: next-build
           path: .next
-      - run: pnpm exec playwright install --with-deps webkit
       - run: pnpm test:e2e --project=ipad-pro-landscape --project=ipad-portrait
       - uses: actions/upload-artifact@v4
         if: failure()
