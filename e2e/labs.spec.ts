@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/?nowelcome&agents=300");
@@ -18,16 +18,23 @@ test("genome editor: open a wild genome, edit an allele, undo", async ({ page })
 });
 
 test("cross lab: Punnett square and a bred litter", async ({ page }) => {
+  // Cross Lab keeps live 3D previews on screen. Under CI's software-rendered WebKit they starve
+  // animation frames, and Playwright's pointer "stable" check waits on those, so this test drives
+  // the controls with the keyboard (focus + Enter), as a hardware-keyboard iPad user can.
+  const activate = async (l: Locator) => {
+    await l.focus();
+    await l.press("Enter");
+  };
   await page.getByRole("button", { name: "Cross Lab", exact: true }).click();
-  await page.getByRole("button", { name: /Choose mother/ }).click();
-  await page.getByRole("tab", { name: /Wild type/ }).click();
-  await page.getByRole("button", { name: "Rabbit" }).click();
-  await page.getByRole("button", { name: /Choose father/ }).click();
-  await page.getByRole("tab", { name: /Wild type/ }).click();
-  await page.getByRole("button", { name: "Rabbit" }).click();
+  await activate(page.getByRole("button", { name: /Choose mother/ }));
+  await activate(page.getByRole("tab", { name: /Wild type/ }));
+  await activate(page.getByRole("button", { name: "Rabbit" }));
+  await activate(page.getByRole("button", { name: /Choose father/ }));
+  await activate(page.getByRole("tab", { name: /Wild type/ }));
+  await activate(page.getByRole("button", { name: "Rabbit" }));
   await expect(page.getByText(/hybrid fertility 100%/)).toBeVisible();
   await expect(page.getByRole("table")).toBeVisible();
-  await page.getByRole("button", { name: /Breed litter/ }).click();
+  await activate(page.getByRole("button", { name: /Breed litter/ }));
   await expect(page.getByText(/viability \d+%/).first()).toBeVisible();
 });
 

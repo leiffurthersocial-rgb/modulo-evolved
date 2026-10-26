@@ -119,6 +119,7 @@ export function CrossLab() {
       />
       <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
         <div className="space-y-4">
+          {(a || b) && <FamilyStage mother={a} father={b} litter={a && b ? litter : []} />}
           <div className="grid grid-cols-2 gap-3">
             <ParentSlot label="Mother ♀" g={a} onPick={() => setPicking("a")} slot="a" />
             <ParentSlot label="Father ♂" g={b} onPick={() => setPicking("b")} slot="b" />
@@ -201,12 +202,6 @@ function ParentSlot({
       <p className="text-[11px] tracking-wider text-fg-subtle uppercase">{label}</p>
       {g && ex ? (
         <>
-          <Stage
-            className="relative h-40 overflow-hidden rounded-lg border border-border bg-[radial-gradient(ellipse_at_center,#16202a,#0b1016)]"
-            distance={3.2}
-          >
-            <CreaturePreview body={ex.rig} lengthM={ex.st.lengthM} normalize />
-          </Stage>
           <p className="truncate text-sm font-medium">{g.name}</p>
           <p className="text-xs text-fg-muted">
             {SPECIES[g.species].name} · {ex.ph.coat} · {ex.ph.massKg.toFixed(ex.ph.massKg < 10 ? 1 : 0)} kg
@@ -232,6 +227,60 @@ function ParentSlot({
         </button>
       )}
     </div>
+  );
+}
+
+/**
+ * One 3D stage for the whole family: parents at the back, the latest litter in front. (A single
+ * WebGL context instead of one per animal keeps Cross Lab light on iPad.)
+ */
+function FamilyStage({
+  mother,
+  father,
+  litter,
+}: {
+  mother: LabGenome | null;
+  father: LabGenome | null;
+  litter: LabGenome[];
+}) {
+  const parents = useMemo(
+    () => [mother, father].map((g) => (g ? express(g.genome, g.species, g.sex) : null)),
+    [mother, father],
+  );
+  const kids = useMemo(() => litter.map((k) => ({ k, ex: express(k.genome, k.species, k.sex) })), [litter]);
+  const all = [...parents.filter((p) => p !== null), ...kids.map((k) => k.ex)];
+  const s = Math.max(...all.map((ex) => displayLength(ex.st.lengthM))) * 1.15;
+  // Litter in rows of up to four in front; parents behind, all turned towards the camera.
+  const cols = Math.min(4, Math.max(1, kids.length));
+  const rows = Math.ceil(kids.length / cols);
+  const width = Math.max(2, cols) * s;
+  return (
+    <Stage
+      distance={Math.max(3, width * 0.85 + rows * s * 0.6 + s)}
+      targetY={s * 0.25}
+      className="relative h-56 overflow-hidden rounded-lg border border-border bg-[radial-gradient(ellipse_at_center,#16202a,#0b1016)]"
+    >
+      {parents.map((ex, i) =>
+        ex ? (
+          <CreaturePreview
+            key={i}
+            body={ex.rig}
+            lengthM={ex.st.lengthM}
+            position={[(i === 0 ? -0.65 : 0.65) * s, 0, kids.length ? -s * 0.9 : 0]}
+            heading={0.75}
+          />
+        ) : null,
+      )}
+      {kids.map(({ k, ex }, i) => (
+        <CreaturePreview
+          key={k.id}
+          body={ex.rig}
+          lengthM={ex.st.lengthM}
+          position={[((i % cols) - (cols - 1) / 2) * s, 0, s * 0.3 + Math.floor(i / cols) * s * 0.85]}
+          heading={0.75}
+        />
+      ))}
+    </Stage>
   );
 }
 
@@ -320,25 +369,11 @@ function Distributions({ a, b, species }: { a: Genome; b: Genome; species: LabGe
 function Litter({ kids, parents }: { kids: LabGenome[]; parents: [LabGenome, LabGenome] }) {
   const lab = useLab.getState();
   const expressed = kids.map((k) => ({ k, ex: express(k.genome, k.species, k.sex) }));
-  const spacing = Math.max(...expressed.map(({ ex }) => displayLength(ex.st.lengthM))) * 1.3;
   return (
     <section className="space-y-3">
       <SectionTitle info="Each offspring got one recombined gamete from each parent, with mutations at the simulation's rates.">
         Litter
       </SectionTitle>
-      <Stage
-        distance={spacing * kids.length * 0.55 + 1.5}
-        className="relative h-48 overflow-hidden rounded-lg border border-border bg-[radial-gradient(ellipse_at_center,#16202a,#0b1016)]"
-      >
-        {expressed.map(({ k, ex }, i) => (
-          <CreaturePreview
-            key={k.id}
-            body={ex.rig}
-            lengthM={ex.st.lengthM}
-            position={[(i - (kids.length - 1) / 2) * spacing, 0, 0]}
-          />
-        ))}
-      </Stage>
       <ul className="space-y-1.5">
         {expressed.map(({ k, ex }) => (
           <li

@@ -15,10 +15,12 @@ export function Stage({
   children,
   className,
   distance = 4,
+  targetY,
 }: {
   children: ReactNode;
   className?: string;
   distance?: number;
+  targetY?: number;
 }) {
   return (
     <div
@@ -27,7 +29,9 @@ export function Stage({
         "relative h-64 overflow-hidden rounded-lg border border-border bg-[radial-gradient(ellipse_at_center,#16202a,#0b1016)]"
       }
     >
-      <StageCanvas distance={distance}>{children}</StageCanvas>
+      <StageCanvas distance={distance} targetY={targetY}>
+        {children}
+      </StageCanvas>
     </div>
   );
 }
