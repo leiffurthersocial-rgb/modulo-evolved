@@ -1,0 +1,85 @@
+"use client";
+
+import { MousePointerClick, LineChart, X } from "lucide-react";
+import { cn } from "@/lib/cn";
+import { Button } from "@/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
+import { useUi, type DockTab } from "@/state/ui-store";
+import { DOCK_TABS } from "../commands/commands";
+import { EnvironmentPanel } from "./environment-panel";
+
+/**
+ * Docked side panel. Landscape: right-hand column. Portrait: bottom sheet.
+ * Floats over the 3D view so the simulation never reflows.
+ */
+export function Dock() {
+  const open = useUi((s) => s.dockOpen);
+  const tab = useUi((s) => s.dockTab);
+  const setTab = useUi((s) => s.setDockTab);
+  const toggleDock = useUi((s) => s.toggleDock);
+
+  if (!open) return null;
+
+  return (
+    <aside
+      aria-label="Side panel"
+      className={cn(
+        "absolute z-10 flex animate-slide-in-right flex-col overflow-hidden rounded-xl border border-border shadow-panel glass",
+        // Landscape iPad: right column between top bar and time dock.
+        "landscape:top-[calc(max(env(safe-area-inset-top),12px)+68px)] landscape:right-[max(env(safe-area-inset-right),12px)] landscape:bottom-[calc(max(env(safe-area-inset-bottom),12px)+68px)] landscape:w-[min(408px,36vw)]",
+        // Portrait iPad: bottom sheet above the time dock.
+        "portrait:right-[max(env(safe-area-inset-right),12px)] portrait:bottom-[calc(max(env(safe-area-inset-bottom),12px)+68px)] portrait:left-[calc(max(env(safe-area-inset-left),12px)+76px)] portrait:h-[42vh] portrait:animate-slide-in-up",
+      )}
+    >
+      <Tabs value={tab} onValueChange={(v) => setTab(v as DockTab)} className="flex min-h-0 flex-1 flex-col">
+        <div className="flex items-center gap-1 border-b border-border p-2">
+          <TabsList className="flex-1">
+            {DOCK_TABS.map((t) => {
+              const Icon = t.icon;
+              return (
+                <TabsTrigger key={t.id} value={t.id}>
+                  <Icon aria-hidden />
+                  {t.label}
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+          <Button variant="ghost" size="icon" onClick={toggleDock} aria-label="Close side panel">
+            <X />
+          </Button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <TabsContent value="inspector" className="h-full">
+            <EmptyState
+              icon={<MousePointerClick className="size-6" />}
+              title="Nothing selected"
+              body="Tap an animal in the world to inspect its genome, phenotype and lineage. Double-tap to follow it."
+            />
+          </TabsContent>
+          <TabsContent value="environment" className="p-4">
+            <EnvironmentPanel />
+          </TabsContent>
+          <TabsContent value="charts" className="h-full">
+            <EmptyState
+              icon={<LineChart className="size-6" />}
+              title="No data yet"
+              body="Population, allele-frequency and biodiversity charts appear here once the simulation is running."
+            />
+          </TabsContent>
+        </div>
+      </Tabs>
+    </aside>
+  );
+}
+
+function EmptyState({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
+  return (
+    <div className="flex h-full min-h-48 flex-col items-center justify-center gap-3 p-8 text-center">
+      <div className="flex size-12 items-center justify-center rounded-xl bg-surface-3 text-fg-subtle">
+        {icon}
+      </div>
+      <p className="text-sm font-medium text-fg">{title}</p>
+      <p className="max-w-64 text-sm text-fg-muted">{body}</p>
+    </div>
+  );
+}
