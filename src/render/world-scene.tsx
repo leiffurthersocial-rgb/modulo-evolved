@@ -12,6 +12,10 @@ import { Effects } from "./effects";
 import { Interaction } from "./interaction";
 import { TerrainMesh } from "./terrain-mesh";
 import { useCameraKeys } from "./use-camera-keys";
+import { Sky } from "./sky";
+import { lazy, Suspense } from "react";
+
+const Post = lazy(() => import("./post"));
 
 const HOME = { pos: [120, 120, 150] as const, target: [0, 0, 10] as const };
 
@@ -33,13 +37,19 @@ export default function WorldScene() {
       <PerformanceMonitor onDecline={() => useSettings.getState().set({ degraded: true })} />
       <AdaptiveDpr pixelated={false} />
       <color attach="background" args={["#0b1016"]} />
-      <fog attach="fog" args={["#0b1016", 200, 460]} />
+      <fog attach="fog" args={["#11252c", 220, 520]} />
+      <Sky />
       <Lights />
       {info && <TerrainMesh key={`${info.seed}-${info.terrain}`} seed={info.seed} kind={info.terrain} />}
       {info && <Creatures maxAgents={info.maxAgents} selectedId={selectedId} />}
       <Effects />
       <Interaction />
       <Controls />
+      {quality === "high" && (
+        <Suspense fallback={null}>
+          <Post />
+        </Suspense>
+      )}
     </Canvas>
   );
 }
