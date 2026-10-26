@@ -13,6 +13,10 @@ export interface Scenario {
   counts: Partial<Record<SpeciesId, number>>;
   /** Scheduled catastrophes: [day, kind]. */
   schedule?: [number, CatastropheKind][];
+  /** Suggested agent budget (small worlds need fewer). */
+  maxAgents?: number;
+  /** Open the Animals panel on start (hands-on scenarios). */
+  handsOn?: boolean;
 }
 
 const env = (patch: Partial<EnvSettings>): EnvSettings => ({
@@ -22,6 +26,38 @@ const env = (patch: Partial<EnvSettings>): EnvSettings => ({
 });
 
 export const SCENARIOS: Scenario[] = [
+  {
+    id: "zoo",
+    name: "Breeding Zoo",
+    tagline: "A fenced paddock with a pond. You feed the animals and decide who breeds.",
+    lesson:
+      'Set daily rations ("enough food for 10 humans"), pair animals by hand and fast-forward generations to watch traits change.',
+    terrain: "zoo",
+    env: env({
+      temperature: 18,
+      humidity: 0.6,
+      food: 0,
+      seasonality: 0,
+      disease: false,
+      uv: 0.5,
+      predation: false,
+      provision: { human: 10, rabbit: 16, deer: 6 },
+    }),
+    counts: { human: 6, rabbit: 6, deer: 4 },
+    maxAgents: 300,
+    handsOn: true,
+  },
+  {
+    id: "mini",
+    name: "Mini Island",
+    tagline: "A small island with a handful of species. Easy on the battery.",
+    lesson: "Small populations: drift is strong and every individual matters. Add or remove animals freely.",
+    terrain: "mini",
+    env: env({ temperature: 15, humidity: 0.7, seasonality: 0.3, uv: 0.5 }),
+    counts: { rabbit: 20, deer: 10, human: 8, fox: 3, frog: 10, duck: 6, sparrow: 10, sardine: 16 },
+    maxAgents: 200,
+    handsOn: true,
+  },
   {
     id: "temperate",
     name: "Temperate Island",
@@ -163,7 +199,7 @@ export const SCENARIOS: Scenario[] = [
   },
 ];
 
-export const DEFAULT_SCENARIO = SCENARIOS[0];
+export const DEFAULT_SCENARIO = SCENARIOS.find((s) => s.id === "temperate")!;
 
 export function scenarioById(id: string) {
   return SCENARIOS.find((s) => s.id === id) ?? DEFAULT_SCENARIO;

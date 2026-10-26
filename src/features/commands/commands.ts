@@ -27,12 +27,21 @@ import {
   ScanSearch,
   Scissors,
   StepForward,
+  PawPrint,
+  Utensils,
+  Eraser,
+  BatteryLow,
+  ChevronsRight,
+  MapPin,
 } from "lucide-react";
 import { useUi, type DockTab, type Mode } from "@/state/ui-store";
 import { useSim } from "@/state/sim-store";
 import { useWorld } from "@/sim/world-store";
 import { useLab } from "@/state/lab-store";
 import { sim } from "@/sim/client";
+import { startScenario } from "@/sim/bridge";
+import { useScenario } from "@/sim/scenario-store";
+import { toggleLowBattery, useSettings } from "@/state/settings-store";
 
 export type CommandGroup =
   "World" | "Simulation" | "Camera" | "Events" | "Edit" | "Navigate" | "Panels" | "Help";
@@ -80,7 +89,8 @@ export const MODES: { id: Mode; label: string; icon: LucideIcon; shortcut: strin
 
 export const DOCK_TABS: { id: DockTab; label: string; icon: LucideIcon; shortcut: string }[] = [
   { id: "inspector", label: "Inspector", icon: ScanSearch, shortcut: "i" },
-  { id: "environment", label: "Environment", icon: CloudSun, shortcut: "e" },
+  { id: "animals", label: "Animals", icon: PawPrint, shortcut: "b" },
+  { id: "environment", label: "Climate", icon: CloudSun, shortcut: "e" },
   { id: "charts", label: "Charts", icon: Activity, shortcut: "c" },
 ];
 
@@ -180,9 +190,86 @@ export function getCommands(): Command[] {
       icon: XCircle,
       shortcut: "escape",
       run: () => {
+        const u = useUi.getState();
+        if (u.spawnTool || u.pairing !== null) {
+          u.setSpawnTool(null);
+          u.setPairing(null);
+          return;
+        }
         useWorld.getState().follow(null);
         useWorld.getState().select(null);
       },
+    },
+    {
+      id: "animals.place",
+      label: "Place animals…",
+      group: "World",
+      icon: MapPin,
+      keywords: ["spawn", "add", "release", "put", "zoo"],
+      run: () => useUi.getState().setDockTab("animals"),
+    },
+    {
+      id: "animals.breed",
+      label: "Breed selected animal with…",
+      group: "World",
+      icon: PawPrint,
+      keywords: ["mate", "pair", "cross", "zoo", "offspring"],
+      run: () => {
+        const id = useWorld.getState().selectedId;
+        if (id === null) useWorld.getState().pushNotice("Select an animal first, then pick its mate.");
+        else useUi.getState().setPairing(id);
+      },
+    },
+    {
+      id: "animals.feedAll",
+      label: "Feed every animal",
+      group: "World",
+      icon: Utensils,
+      keywords: ["food", "hungry", "energy", "zoo"],
+      run: () =>
+        void sim.rpc<number>("feedAll").then((n) => useWorld.getState().pushNotice(`Fed all ${n} animals.`)),
+    },
+    {
+      id: "animals.clear",
+      label: "Clear island (remove all animals)",
+      group: "World",
+      icon: Eraser,
+      keywords: ["empty", "reset", "kill", "remove", "wipe"],
+      run: () =>
+        void sim.rpc<number>("clear").then((n) => useWorld.getState().pushNotice(`Cleared ${n} animals.`)),
+    },
+    {
+      id: "animals.generation",
+      label: "Fast-forward one generation",
+      group: "Simulation",
+      icon: ChevronsRight,
+      shortcut: "g",
+      keywords: ["generations", "skip", "breed", "evolve", "time"],
+      run: () => (useWorld.getState().fastForward ? sim.cancelFastForward() : sim.fastForward(1, null)),
+    },
+    {
+      id: "world.zoo",
+      label: "New Breeding Zoo",
+      group: "World",
+      icon: PawPrint,
+      keywords: ["zoo", "paddock", "enclosure", "breeding", "scenario"],
+      run: () => startScenario("zoo", useScenario.getState().seed),
+    },
+    {
+      id: "world.mini",
+      label: "New Mini Island",
+      group: "World",
+      icon: Globe,
+      keywords: ["small", "tiny", "island", "scenario", "battery"],
+      run: () => startScenario("mini", useScenario.getState().seed),
+    },
+    {
+      id: "world.battery",
+      label: useSettings.getState().quality === "battery" ? "Turn off low battery mode" : "Low battery mode",
+      group: "World",
+      icon: BatteryLow,
+      keywords: ["power", "energy", "saver", "performance", "fps", "quality"],
+      run: () => toggleLowBattery(),
     },
     {
       id: "event.drought",

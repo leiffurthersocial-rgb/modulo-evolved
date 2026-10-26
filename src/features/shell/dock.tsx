@@ -9,6 +9,7 @@ import { DOCK_TABS } from "../commands/commands";
 import { EnvironmentPanel } from "./environment-panel";
 import { InspectorPanel } from "../inspector/inspector-panel";
 import { ChartsPanel } from "../charts/charts-panel";
+import { AnimalsPanel } from "../animals/animals-panel";
 
 /**
  * Docked side panel. Landscape: right-hand column. Portrait: bottom sheet.
@@ -40,9 +41,10 @@ export function Dock() {
             {DOCK_TABS.map((t) => {
               const Icon = t.icon;
               return (
-                <TabsTrigger key={t.id} value={t.id}>
+                <TabsTrigger key={t.id} value={t.id} aria-label={t.label} className="min-w-11">
                   <Icon aria-hidden />
-                  {t.label}
+                  {/* Four tabs don't fit a narrow dock: inactive ones show just their icon. */}
+                  <span className={t.id === tab ? undefined : "sr-only"}>{t.label}</span>
                 </TabsTrigger>
               );
             })}
@@ -54,6 +56,9 @@ export function Dock() {
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <TabsContent value="inspector" className="h-full">
             <InspectorPanel />
+          </TabsContent>
+          <TabsContent value="animals">
+            <AnimalsPanel />
           </TabsContent>
           <TabsContent value="environment" className="p-4">
             <EnvironmentPanel />

@@ -15,6 +15,7 @@ import { Viewport } from "./viewport";
 import { SimBridge } from "@/sim/bridge";
 import { ContextMenu } from "../world/context-menu";
 import { Notices } from "../world/notices";
+import { ToolBanner } from "../animals/tool-banner";
 import { useWorld } from "@/sim/world-store";
 import { useLab } from "@/state/lab-store";
 import { useSettings } from "@/state/settings-store";
@@ -56,6 +57,7 @@ export function AppShell() {
         {mode === "world" && <Dock />}
         <TimeDock />
         <Notices />
+        <ToolBanner />
         <ContextMenu />
         <CommandPalette />
         <NewWorldDialog />

@@ -81,6 +81,19 @@ export interface StatsMsg {
   series: SeriesPoint[];
   seriesReset: boolean;
   agentCount: number;
+  /** Mean generation of living animals. */
+  meanGeneration: number;
+  /** Keeper food in store, as a fraction of each provisioned species' daily ration. */
+  rations: Partial<Record<SpeciesId, number>>;
+  fastForward: FastForwardStatus | null;
+}
+
+export interface FastForwardStatus {
+  species: SpeciesId | null;
+  from: number;
+  target: number;
+  current: number;
+  days: number;
 }
 
 export interface VegMsg {
@@ -110,5 +123,8 @@ export type ToWorker =
   | { type: "setSpeed"; daysPerSec: number }
   | { type: "step"; days: number }
   | { type: "setEnv"; env: EnvSettings }
+  | { type: "fastForward"; generations: number; species: SpeciesId | null }
+  | { type: "cancelFastForward" }
+  | { type: "setLowPower"; low: boolean }
   | { type: "trigger"; kind: CatastropheKind; x?: number; z?: number }
   | { type: "rpc"; id: number; method: string; args: unknown[] };

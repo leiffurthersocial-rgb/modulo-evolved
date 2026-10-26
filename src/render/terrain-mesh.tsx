@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Rng } from "@/engine/rng/rng";
-import { HALF, MAX_HEIGHT, Terrain, WORLD_SIZE, type TerrainKind } from "@/engine/world/terrain";
+import { HALF, MAX_HEIGHT, Terrain, WORLD_SIZE, ZOO_HALF, type TerrainKind } from "@/engine/world/terrain";
 import { VEG_RES } from "@/engine/sim/vegetation";
 import { sim } from "@/sim/client";
 import { useWorld } from "@/sim/world-store";
@@ -21,7 +21,11 @@ const ROCK = c("#6d6a66");
 const SNOW = c("#eef3f6");
 const BARE = c("#7a6a4a");
 
+/** The zoo is landscaped: its look doesn't follow the (keeper-fed) vegetation grid. */
+let decorative = false;
+
 function vegAt(veg: Float32Array | null, x: number, z: number) {
+  if (decorative) return Math.max(Math.abs(x), Math.abs(z)) < ZOO_HALF + 1 ? 0.42 : 0.62;
   if (!veg) return 0.6;
   const i = Math.max(0, Math.min(VEG_RES - 1, Math.floor(((x + HALF) / WORLD_SIZE) * VEG_RES)));
   const j = Math.max(0, Math.min(VEG_RES - 1, Math.floor(((z + HALF) / WORLD_SIZE) * VEG_RES)));
@@ -59,6 +63,9 @@ function recolorTerrain(geometry: THREE.BufferGeometry, veg: Float32Array | null
 
 export function TerrainMesh({ seed, kind }: { seed: number; kind: TerrainKind }) {
   const terrain = useMemo(() => new Terrain({ seed, kind }), [seed, kind]);
+  useEffect(() => {
+    decorative = kind === "zoo";
+  }, [kind]);
   const geometry = useMemo(() => {
     const plane = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, SEG, SEG);
     plane.rotateX(-Math.PI / 2);
@@ -85,10 +92,11 @@ export function TerrainMesh({ seed, kind }: { seed: number; kind: TerrainKind })
 
   return (
     <group>
-      <mesh geometry={geometry} receiveShadow>
+      <mesh name="terrain" geometry={geometry} receiveShadow>
         <meshStandardMaterial vertexColors flatShading roughness={0.95} metalness={0} />
       </mesh>
-      <Trees terrain={terrain} seed={seed} />
+      <Trees terrain={terrain} seed={seed} openPaddock={kind === "zoo"} />
+      {kind === "zoo" && <Fence terrain={terrain} />}
       <Water />
     </group>
   );
@@ -114,7 +122,7 @@ function Water() {
   );
 }
 
-function Trees({ terrain, seed }: { terrain: Terrain; seed: number }) {
+function Trees({ terrain, seed, openPaddock }: { terrain: Terrain; seed: number; openPaddock: boolean }) {
   const trunks = useRef<THREE.InstancedMesh>(null);
   const crowns = useRef<THREE.InstancedMesh>(null);
   const placements = useMemo(() => {
@@ -126,10 +134,11 @@ function Trees({ terrain, seed }: { terrain: Terrain; seed: number }) {
       const y = terrain.heightAt(x, z);
       const t = y / MAX_HEIGHT;
       if (y < 1 || t > 0.45 || !rng.chance(0.75 - t)) continue;
+      if (openPaddock && Math.max(Math.abs(x), Math.abs(z)) < ZOO_HALF + 3 && !rng.chance(0.08)) continue;
       out.push({ x, y, z, s: rng.range(0.7, 1.4), r: rng.range(0, Math.PI * 2) });
     }
     return out;
-  }, [terrain, seed]);
+  }, [terrain, seed, openPaddock]);
 
   const last = useRef({ veg: -1, temp: 999 });
   const tmp = useMemo(
@@ -178,6 +187,63 @@ function Trees({ terrain, seed }: { terrain: Terrain; seed: number }) {
       <instancedMesh ref={crowns} args={[undefined, undefined, placements.length]} castShadow receiveShadow>
         <coneGeometry args={[1.4, 3.6, 6]} />
         <meshStandardMaterial color="#ffffff" flatShading roughness={0.9} />
+      </instancedMesh>
+    </>
+  );
+}
+
+/** Post-and-rail fence around the zoo paddock. */
+function Fence({ terrain }: { terrain: Terrain }) {
+  const posts = useRef<THREE.InstancedMesh>(null);
+  const rails = useRef<THREE.InstancedMesh>(null);
+  const layout = useMemo(() => {
+    const e = ZOO_HALF + 0.6;
+    const pts: [number, number][] = [];
+    const step = 3;
+    for (let t = -e; t < e; t += step) pts.push([t, -e], [e, t], [-t, e], [-e, -t]);
+    const segs: { x: number; z: number; len: number; rot: number; y: number }[] = [];
+    for (let t = -e; t < e; t += step) {
+      const len = Math.min(step, e - t);
+      for (const [x, z, rot] of [
+        [t + len / 2, -e, 0],
+        [t + len / 2, e, 0],
+        [-e, t + len / 2, Math.PI / 2],
+        [e, t + len / 2, Math.PI / 2],
+      ] as const)
+        segs.push({ x, z, len, rot, y: terrain.heightAt(x, z) });
+    }
+    return { pts, segs };
+  }, [terrain]);
+  useLayoutEffect(() => {
+    const p = posts.current;
+    const r = rails.current;
+    if (!p || !r) return;
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    layout.pts.forEach(([x, z], i) => {
+      m.makeTranslation(x, terrain.heightAt(x, z) + 0.8, z);
+      p.setMatrixAt(i, m);
+    });
+    layout.segs.forEach((sg, i) => {
+      q.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, sg.rot);
+      for (let k = 0; k < 2; k++)
+        r.setMatrixAt(
+          i * 2 + k,
+          m.compose(new THREE.Vector3(sg.x, sg.y + 0.65 + k * 0.6, sg.z), q, new THREE.Vector3(sg.len, 1, 1)),
+        );
+    });
+    p.instanceMatrix.needsUpdate = true;
+    r.instanceMatrix.needsUpdate = true;
+  }, [layout, terrain]);
+  return (
+    <>
+      <instancedMesh ref={posts} args={[undefined, undefined, layout.pts.length]} castShadow>
+        <boxGeometry args={[0.22, 1.6, 0.22]} />
+        <meshStandardMaterial color="#8a6a48" flatShading roughness={1} />
+      </instancedMesh>
+      <instancedMesh ref={rails} args={[undefined, undefined, layout.segs.length * 2]} castShadow>
+        <boxGeometry args={[1, 0.12, 0.08]} />
+        <meshStandardMaterial color="#a07c55" flatShading roughness={1} />
       </instancedMesh>
     </>
   );

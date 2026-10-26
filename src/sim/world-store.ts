@@ -4,7 +4,7 @@ import { create } from "zustand";
 import type { SeriesPoint } from "@/engine/sim/recorder";
 import type { DeathCause, Lineage, WorldEvent } from "@/engine/sim/types";
 import type { SpeciesId } from "@/engine/species/types";
-import type { InitInfo, StatsMsg } from "./protocol";
+import type { FastForwardStatus, InitInfo, StatsMsg } from "./protocol";
 
 export interface Notice {
   day: number;
@@ -31,6 +31,9 @@ interface WorldState {
   notices: Notice[];
   events: WorldEvent[];
   series: SeriesPoint[];
+  meanGeneration: number;
+  rations: Partial<Record<SpeciesId, number>>;
+  fastForward: FastForwardStatus | null;
   selectedId: number | null;
   followId: number | null;
   contextMenu: { id: number; x: number; y: number } | null;
@@ -65,11 +68,22 @@ export const useWorld = create<WorldState>()((set, get) => ({
   notices: [],
   events: [],
   series: [],
+  meanGeneration: 0,
+  rations: {},
+  fastForward: null,
   selectedId: null,
   followId: null,
   contextMenu: null,
   onInit: () =>
-    set({ ready: false, selectedId: null, followId: null, contextMenu: null, notices: [], series: [] }),
+    set({
+      ready: false,
+      selectedId: null,
+      followId: null,
+      contextMenu: null,
+      notices: [],
+      series: [],
+      fastForward: null,
+    }),
   onReady: (info, epoch) => set({ ready: true, info, epoch }),
   onFrame: (day, rate, count) => {
     const s = get();
@@ -95,6 +109,9 @@ export const useWorld = create<WorldState>()((set, get) => ({
       deathCauses: m.deathCauses,
       events: m.events,
       agentCount: m.agentCount,
+      meanGeneration: m.meanGeneration,
+      rations: m.rations,
+      fastForward: m.fastForward,
       notices: fresh.length ? [...s.notices, ...fresh].slice(-40) : s.notices,
       series: m.seriesReset ? m.series : m.series.length ? [...s.series, ...m.series] : s.series,
     });

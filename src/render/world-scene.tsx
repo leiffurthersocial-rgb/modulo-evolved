@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { AdaptiveDpr, CameraControls, PerformanceMonitor } from "@react-three/drei";
 import { useWorld } from "@/sim/world-store";
 import { renderProfile, useSettings } from "@/state/settings-store";
@@ -15,10 +15,17 @@ import { TerrainMesh } from "./terrain-mesh";
 import { useCameraKeys } from "./use-camera-keys";
 import { Sky } from "./sky";
 import { lazy, Suspense } from "react";
+import type { TerrainKind } from "@/engine/world/terrain";
 
 const Post = lazy(() => import("./post"));
 
-const HOME = { pos: [120, 120, 150] as const, target: [0, 0, 10] as const };
+type Home = { pos: readonly [number, number, number]; target: readonly [number, number, number] };
+const HOME: Home = { pos: [120, 120, 150], target: [0, 0, 10] };
+/** Small worlds start with the camera closer in. */
+const ZOO_HOME: Home = { pos: [38, 34, 52], target: [0, 0, 2] };
+const MINI_HOME: Home = { pos: [62, 58, 80], target: [0, 0, 4] };
+const homeFor = (kind: TerrainKind | undefined) =>
+  kind === "zoo" ? ZOO_HOME : kind === "mini" ? MINI_HOME : HOME;
 
 export default function WorldScene() {
   const info = useWorld((s) => s.info);
@@ -30,7 +37,7 @@ export default function WorldScene() {
   const visible = useUi((s) => s.mode === "world");
   return (
     <Canvas
-      frameloop={visible ? "always" : "demand"}
+      frameloop={visible && !profile.fps ? "always" : "demand"}
       shadows={profile.shadows}
       dpr={profile.dpr}
       camera={{ position: [...HOME.pos], fov: 45, near: 0.3, far: 1400 }}
@@ -38,6 +45,7 @@ export default function WorldScene() {
       className="touch-none"
       aria-label="3D world view"
     >
+      <FpsCap fps={visible ? profile.fps : 0} />
       <PerformanceMonitor onDecline={() => useSettings.getState().set({ degraded: true })} />
       <AdaptiveDpr pixelated={false} />
       <color attach="background" args={["#0b1016"]} />
@@ -48,7 +56,7 @@ export default function WorldScene() {
       {info && <Creatures maxAgents={info.maxAgents} selectedId={selectedId} />}
       <Effects />
       <Interaction />
-      <Controls />
+      <Controls kind={info?.terrain} />
       {quality === "high" && (
         <Suspense fallback={null}>
           <Post />
@@ -83,12 +91,25 @@ function Lights() {
   );
 }
 
-function Controls() {
-  const ref = useRef<CameraControls>(null);
-  useCameraKeys(ref, HOME);
+/** Renders at a fixed rate in demand mode (low battery). */
+function FpsCap({ fps }: { fps: number }) {
+  const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
-    ref.current?.setLookAt(...HOME.pos, ...HOME.target, false);
-  }, []);
+    if (!fps) return;
+    const t = setInterval(() => invalidate(), 1000 / fps);
+    return () => clearInterval(t);
+  }, [fps, invalidate]);
+  return null;
+}
+
+function Controls({ kind }: { kind: TerrainKind | undefined }) {
+  const ref = useRef<CameraControls>(null);
+  const home = homeFor(kind);
+  useCameraKeys(ref, home);
+  useEffect(() => {
+    const h = homeFor(kind);
+    ref.current?.setLookAt(...h.pos, ...h.target, false);
+  }, [kind]);
   const lastFollow = useRef<number | null>(null);
   useFrame(() => {
     const c = ref.current;

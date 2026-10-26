@@ -35,7 +35,7 @@ test("keyboard: shortcuts drive the app", async ({ page }) => {
 });
 
 test("science tooltips open on tap", async ({ page }) => {
-  await page.getByRole("tab", { name: "Environment" }).tap();
+  await page.getByRole("tab", { name: "Climate" }).tap();
   await page.getByRole("button", { name: "About Temperature" }).tap();
   await expect(page.getByText("Bergmann's rule", { exact: false })).toBeVisible();
 });

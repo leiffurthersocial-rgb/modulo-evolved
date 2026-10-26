@@ -1,8 +1,16 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { SpeciesId } from "@/engine/species/types";
 
 export type Mode = "world" | "genome" | "cross" | "splice" | "phylogeny";
-export type DockTab = "inspector" | "environment" | "charts";
+export type DockTab = "inspector" | "animals" | "environment" | "charts";
+
+/** Tap-to-place tool for releasing wild animals. */
+export interface SpawnTool {
+  species: SpeciesId;
+  sex: "F" | "M" | "pair";
+  count: number;
+}
 export type DialogId = "newWorld" | "saves" | "settings" | "welcome" | null;
 
 interface UiState {
@@ -13,6 +21,12 @@ interface UiState {
   shortcutsOpen: boolean;
   dialog: DialogId;
   tourStep: number | null;
+  /** Active tap-to-place tool (null = normal selection). */
+  spawnTool: SpawnTool | null;
+  /** Animal waiting for a mate to be tapped (manual breeding). */
+  pairing: number | null;
+  setSpawnTool: (t: SpawnTool | null) => void;
+  setPairing: (id: number | null) => void;
   setDialog: (d: DialogId) => void;
   setTourStep: (s: number | null) => void;
   setMode: (mode: Mode) => void;
@@ -34,6 +48,10 @@ export const useUi = create<UiState>()(
       shortcutsOpen: false,
       dialog: null,
       tourStep: null,
+      spawnTool: null,
+      pairing: null,
+      setSpawnTool: (spawnTool) => set({ spawnTool, pairing: null }),
+      setPairing: (pairing) => set({ pairing, spawnTool: null }),
       setDialog: (dialog) => set({ dialog }),
       setTourStep: (tourStep) => set({ tourStep }),
       setMode: (mode) => set({ mode }),

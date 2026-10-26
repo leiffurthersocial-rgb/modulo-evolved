@@ -1,6 +1,7 @@
 "use client";
 
 import type { CatastropheKind, EnvSettings, WorldConfig } from "@/engine/sim/types";
+import type { SpeciesId } from "@/engine/species/types";
 import type { BodyDesc, FromWorker, InitInfo, StatsMsg, ToWorker } from "./protocol";
 import { useWorld } from "./world-store";
 
@@ -99,6 +100,15 @@ class SimClient {
   }
   setEnv(env: EnvSettings) {
     this.send({ type: "setEnv", env });
+  }
+  fastForward(generations: number, species: SpeciesId | null) {
+    this.send({ type: "fastForward", generations, species });
+  }
+  cancelFastForward() {
+    this.send({ type: "cancelFastForward" });
+  }
+  setLowPower(low: boolean) {
+    this.send({ type: "setLowPower", low });
   }
   trigger(kind: CatastropheKind, x?: number, z?: number) {
     this.send({ type: "trigger", kind, x, z });

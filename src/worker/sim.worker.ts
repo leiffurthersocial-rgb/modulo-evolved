@@ -5,7 +5,9 @@ import type { CatastropheKind, WorldConfig } from "@/engine/sim/types";
 import type { SpeciesId } from "@/engine/species/types";
 import { heterozygosity } from "@/engine/genetics/expression";
 import { bodyOf } from "@/sim/bodies";
-import { FLAG, STRIDE, type FromWorker, type ToWorker } from "@/sim/protocol";
+import { FLAG, STRIDE, type FastForwardStatus, type FromWorker, type ToWorker } from "@/sim/protocol";
+import { SPECIES, SPECIES_IDS } from "@/engine/species/roster";
+import type { Sex } from "@/engine/genetics/types";
 import { serializeWorld, deserializeWorld } from "@/engine/sim/serialize";
 import { founderGenome } from "@/engine/species/founders";
 
@@ -27,6 +29,11 @@ let lastLineageCount = -1;
 let rate = 0;
 const MAX_DT = 0.1;
 const BUDGET_MS = 12;
+/** Fast-forward runs headless-sized steps with a bigger time budget. */
+const FF_DT = 0.25;
+const FF_BUDGET_MS = 40;
+let lowPower = false;
+let ff: (FastForwardStatus & { startDay: number; maxDays: number }) | null = null;
 
 const STATE_CODE: Record<string, number> = {
   wander: 0,
@@ -40,6 +47,7 @@ const STATE_CODE: Record<string, number> = {
 
 function start(config: Partial<WorldConfig>, scen: string, sched: [number, CatastropheKind][] = []) {
   world = new World(config);
+  ff = null;
   scenario = scen;
   schedule = [...sched].sort((a, b) => a[0] - b[0]);
   sentPoints = 0;
@@ -128,6 +136,13 @@ function sendStats(force = false) {
     series,
     seriesReset: reset,
     agentCount: w.agents.length,
+    meanGeneration: w.meanGeneration(),
+    rations: Object.fromEntries(
+      [...w.rations].map(([id, kj]) => [id, kj / ((w.env.provision[id] ?? 1) * w.adultFmr(id))]),
+    ),
+    fastForward: ff
+      ? { ...ff, current: w.meanGeneration(ff.species ?? undefined), days: w.day - ff.startDay }
+      : null,
   });
 }
 
@@ -141,7 +156,8 @@ function loop() {
   const now = performance.now();
   const real = Math.min(0.25, (now - last) / 1000);
   last = now;
-  if (world) {
+  if (world && ff) fastForward(world);
+  else if (world) {
     let days = (running ? daysPerSec * real : 0) + pendingStep;
     pendingStep = 0;
     const t0 = performance.now();
@@ -156,6 +172,8 @@ function loop() {
     }
     rate = rate * 0.9 + (real > 0 ? done / real : 0) * 0.1;
     if (done > 0 || world.newborns.length || world.deaths.length) sendFrame();
+  }
+  if (world) {
     if (now - lastStats > 500) {
       lastStats = now;
       sendStats();
@@ -165,9 +183,42 @@ function loop() {
       sendVeg();
     }
   }
-  setTimeout(loop, 16);
+  setTimeout(loop, lowPower && !ff ? 40 : 16);
 }
 setTimeout(loop, 16);
+
+/** Run as fast as possible until the mean generation reaches the target (or a time limit). */
+function fastForward(w: World) {
+  const job = ff!;
+  const t0 = performance.now();
+  const start = w.day;
+  while (performance.now() - t0 < FF_BUDGET_MS) {
+    w.tick(FF_DT);
+    while (schedule.length && w.day >= schedule[0][0]) w.trigger(schedule.shift()![1]);
+  }
+  rate = (w.day - start) / (FF_BUDGET_MS / 1000);
+  const sp = job.species ?? undefined;
+  const alive = sp ? w.speciesCount(sp) : w.agents.length;
+  const gen = w.meanGeneration(sp);
+  const elapsed = w.day - job.startDay;
+  let done: string | null = null;
+  if (gen >= job.target)
+    done = `Fast-forward complete: generation ${gen.toFixed(1)} after ${fmtDays(elapsed)}.`;
+  else if (alive === 0)
+    done = `Fast-forward stopped: no ${sp ? SPECIES[sp].name.toLowerCase() : "animal"}s left.`;
+  else if (elapsed > job.maxDays)
+    done = `Fast-forward stopped after ${fmtDays(elapsed)}: generation ${gen.toFixed(1)} (are they breeding? check food and sexes).`;
+  if (done) {
+    ff = null;
+    w.notices.push({ day: w.day, text: done, kind: "event" });
+    sendStats();
+  }
+  sendFrame();
+}
+
+function fmtDays(d: number) {
+  return d < 730 ? `${Math.round(d)} days` : `${(d / 365).toFixed(1)} years`;
+}
 
 // ------------------------------------------------------------------ RPC
 
@@ -257,6 +308,46 @@ const rpc: Record<string, (...args: never[]) => unknown> = {
     if (a && world) world.kill(a, "culled");
     return true;
   },
+  feed(id: number) {
+    const a = world?.byId.get(id);
+    if (a && world) world.feed(a);
+    return !!a;
+  },
+  /** Feed every animal (or every animal of a species). Returns how many were fed. */
+  feedAll(species?: SpeciesId) {
+    if (!world) return 0;
+    let n = 0;
+    for (const a of world.agents)
+      if (!a.dead && (!species || a.species === species)) {
+        world.feed(a);
+        n++;
+      }
+    return n;
+  },
+  breed(a: number, b: number) {
+    const x = world?.byId.get(a);
+    const y = world?.byId.get(b);
+    if (!world || !x || !y) return { born: [], stillborn: 0, error: "One of them is no longer alive." };
+    const res = world.breedNow(x, y);
+    sendFrame();
+    sendStats();
+    return res;
+  },
+  clear(species?: SpeciesId) {
+    if (!world) return 0;
+    const n = world.clear(species);
+    ff = null;
+    sendFrame();
+    sendStats();
+    return n;
+  },
+  spawnWild(species: SpeciesId, x: number, z: number, count: number, sex: Sex | "pair") {
+    if (!world) return { ids: [] };
+    const res = world.spawnWild(species, x, z, count, sex);
+    sendFrame();
+    sendStats();
+    return res;
+  },
   agentAt(id: number) {
     const a = world?.byId.get(id);
     return a ? [a.x, a.y, a.z] : null;
@@ -269,6 +360,7 @@ const rpc: Record<string, (...args: never[]) => unknown> = {
     world = res.world;
     scenario = res.scenario;
     schedule = [];
+    ff = null;
     sentPoints = 0;
     sentNotices = 0;
     world.drainChanges();
@@ -320,6 +412,37 @@ ctx.onmessage = (e: MessageEvent<ToWorker>) => {
       break;
     case "setEnv":
       world?.setEnv(m.env);
+      break;
+    case "fastForward": {
+      if (!world) break;
+      const sp = m.species ?? undefined;
+      const from = world.meanGeneration(sp);
+      const present = SPECIES_IDS.filter((id) => (sp ? id === sp : world!.speciesCount(id) > 0));
+      const genDays = Math.max(
+        60,
+        ...present.map((id) => SPECIES[id].maturityY * 365 + SPECIES[id].gestationD + 30),
+      );
+      ff = {
+        species: m.species,
+        from,
+        target: Math.floor(from + 1e-6) + m.generations,
+        current: from,
+        days: 0,
+        startDay: world.day,
+        maxDays: genDays * (m.generations + 1) * 2.5,
+      };
+      sendStats();
+      break;
+    }
+    case "cancelFastForward":
+      if (ff && world) {
+        world.notices.push({ day: world.day, text: "Fast-forward cancelled.", kind: "event" });
+        ff = null;
+        sendStats();
+      }
+      break;
+    case "setLowPower":
+      lowPower = m.low;
       break;
     case "trigger":
       world?.trigger(m.kind, m.x, m.z);

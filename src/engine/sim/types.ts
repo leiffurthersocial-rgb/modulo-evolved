@@ -29,6 +29,12 @@ export interface EnvSettings {
   /** Multiplier on all mutation rates. */
   mutationRate: number;
   impact: HumanImpact;
+  /** Predators may attack other species (switched off in zoo enclosures). */
+  predation: boolean;
+  /** Keeper rations: daily food sufficient for this many adults of each species. */
+  provision: Partial<Record<SpeciesId, number>>;
+  /** Population caps chosen by the user (override the automatic agent budget). */
+  caps: Partial<Record<SpeciesId, number>>;
 }
 
 export const DEFAULT_ENV: EnvSettings = {
@@ -40,7 +46,21 @@ export const DEFAULT_ENV: EnvSettings = {
   uv: 0.5,
   mutationRate: 1,
   impact: { enabled: false, hunting: 0.3, clearing: 0.3, farming: 0.3, herding: false, protectedArea: 0.25 },
+  predation: true,
+  provision: {},
+  caps: {},
 };
+
+/** Fill fields added in later versions (old saves and share links). */
+export function normalizeEnv(env: Partial<EnvSettings>): EnvSettings {
+  return {
+    ...DEFAULT_ENV,
+    ...env,
+    impact: { ...DEFAULT_ENV.impact, ...env.impact },
+    provision: { ...env.provision },
+    caps: { ...env.caps },
+  };
+}
 
 export type CatastropheKind = "drought" | "iceAge" | "meteor" | "plague";
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Crosshair, Dna, GitMerge, ScanSearch, Scissors, Trash2 } from "lucide-react";
+import { Crosshair, Dna, GitMerge, Heart, ScanSearch, Scissors, Trash2, Utensils } from "lucide-react";
+import { feedAnimal } from "../animals/actions";
 import { SPECIES } from "@/engine/species/roster";
 import { sim } from "@/sim/client";
 import { useWorld } from "@/sim/world-store";
@@ -47,6 +48,22 @@ export function ContextMenu() {
         useWorld.getState().follow(menu.id);
       },
     },
+    {
+      icon: Utensils,
+      label: "Feed",
+      run: () => {
+        close();
+        void feedAnimal(menu.id);
+      },
+    },
+    {
+      icon: Heart,
+      label: "Breed with…",
+      run: () => {
+        close();
+        useUi.getState().setPairing(menu.id);
+      },
+    },
     { icon: Dna, label: "Edit genome", run: () => withGenome((d) => openInEditor(lab(d))) },
     { icon: GitMerge, label: "Cross Lab parent A", run: () => withGenome((d) => sendToCross("a", lab(d))) },
     { icon: GitMerge, label: "Cross Lab parent B", run: () => withGenome((d) => sendToCross("b", lab(d))) },
@@ -61,7 +78,10 @@ export function ContextMenu() {
     },
   ];
   const x = Math.min(menu.x, (typeof window !== "undefined" ? window.innerWidth : 1000) - 230);
-  const y = Math.min(menu.y, (typeof window !== "undefined" ? window.innerHeight : 800) - 360);
+  const y = Math.max(
+    8,
+    Math.min(menu.y, (typeof window !== "undefined" ? window.innerHeight : 800) - (items.length * 44 + 40)),
+  );
   return (
     <>
       <div className="fixed inset-0 z-30" onPointerDown={close} aria-hidden />

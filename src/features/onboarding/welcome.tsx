@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Compass, History, Map as MapIcon, Sparkles } from "lucide-react";
+import { Compass, History, Map as MapIcon, PawPrint, Sparkles } from "lucide-react";
+import { startScenario } from "@/sim/bridge";
+import { useScenario } from "@/sim/scenario-store";
 import { useSettings } from "@/state/settings-store";
 import { useUi } from "@/state/ui-store";
 import { listSaves, loadWorld, AUTOSAVE_ID } from "@/persistence/world-io";
@@ -41,6 +43,12 @@ export function Welcome() {
       title: "Take the 1-minute tour",
       body: "Learn the controls: touch, keyboard and the labs.",
       run: () => (close(), useUi.getState().setTourStep(0)),
+    },
+    {
+      icon: PawPrint,
+      title: "Open the Breeding Zoo",
+      body: "A small paddock: feed animals, pair them up and fast-forward generations.",
+      run: () => (close(), startScenario("zoo", useScenario.getState().seed)),
     },
     {
       icon: MapIcon,

@@ -7,25 +7,29 @@ import { useEnv } from "@/state/env-store";
 import { DAYS_PER_SEC_AT_1X, SPEEDS, useSim } from "@/state/sim-store";
 import { useLab, newId } from "@/state/lab-store";
 import { useUi } from "@/state/ui-store";
+import { useSettings } from "@/state/settings-store";
 import { clearShareHash, readShare } from "@/persistence/share";
 import { saveWorld, AUTOSAVE_ID } from "@/persistence/world-io";
 import { sim } from "./client";
 import { useScenario } from "./scenario-store";
 import { useWorld } from "./world-store";
 
+let booted = false;
+
 /** Keeps the worker in sync with UI stores, handles share links and autosave. Mount once. */
 export function SimBridge() {
   useEffect(() => {
-    if (!sim.started) {
-      void Promise.resolve(useScenario.persist.rehydrate()).then(() => {
-        if (sim.started) return;
-        boot();
-      });
+    if (!booted) {
+      booted = true;
+      void Promise.resolve(useScenario.persist.rehydrate()).then(boot);
     }
     const unsubSim = useSim.subscribe((s, prev) => {
       if (s.paused !== prev.paused) sim.setRunning(!s.paused);
       if (s.speedIndex !== prev.speedIndex) sim.setSpeed(SPEEDS[s.speedIndex] * DAYS_PER_SEC_AT_1X);
     });
+    const syncPower = () => sim.setLowPower(useSettings.getState().quality === "battery");
+    syncPower();
+    const unsubSettings = useSettings.subscribe((s, prev) => s.quality !== prev.quality && syncPower());
     let envTimer: ReturnType<typeof setTimeout> | null = null;
     const unsubEnv = useEnv.subscribe(() => {
       if (envTimer) clearTimeout(envTimer);
@@ -41,6 +45,7 @@ export function SimBridge() {
     document.addEventListener("visibilitychange", onHide);
     return () => {
       unsubSim();
+      unsubSettings();
       unsubEnv();
       clearInterval(timer);
       document.removeEventListener("visibilitychange", onHide);
@@ -92,11 +97,12 @@ export function startScenario(id: string, seed: number, maxAgents?: number, envO
       terrain: sc.terrain,
       env,
       counts: sc.counts,
-      maxAgents: maxAgents ?? useScenario.getState().maxAgents,
+      maxAgents: Math.min(maxAgents ?? useScenario.getState().maxAgents, sc.maxAgents ?? Infinity),
     },
     sc.id,
     sc.schedule,
   );
+  if (sc.handsOn) useUi.getState().setDockTab("animals");
   sim.setSpeed(SPEEDS[s.speedIndex] * DAYS_PER_SEC_AT_1X);
   sim.setRunning(!s.paused);
 }

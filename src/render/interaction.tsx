@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { useWorld } from "@/sim/world-store";
+import { useUi } from "@/state/ui-store";
+import { breedPair, placeAnimals } from "@/features/animals/actions";
 import { renderAgents } from "./creatures/render-state";
 
 const TAP_MS = 350;
@@ -16,7 +18,7 @@ const SLOP = 9;
  * fingers), double-tap follows it, long-press opens the context menu. Works with mouse too.
  */
 export function Interaction() {
-  const { gl, camera } = useThree();
+  const { gl, camera, scene } = useThree();
 
   useEffect(() => {
     const el = gl.domElement;
@@ -25,6 +27,18 @@ export function Interaction() {
     let longTimer: ReturnType<typeof setTimeout> | null = null;
     let lastTap = { t: 0, id: -1 };
     const v = new THREE.Vector3();
+    const ray = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();
+
+    /** World position on the terrain under a screen point. */
+    const ground = (clientX: number, clientY: number): THREE.Vector3 | null => {
+      const terrain = scene.getObjectByName("terrain");
+      if (!terrain) return null;
+      const rect = el.getBoundingClientRect();
+      ndc.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+      ray.setFromCamera(ndc, camera);
+      return ray.intersectObject(terrain, false)[0]?.point ?? null;
+    };
 
     const pick = (clientX: number, clientY: number): number | null => {
       const rect = el.getBoundingClientRect();
@@ -81,8 +95,21 @@ export function Interaction() {
         down = null;
         return;
       }
+      const ui = useUi.getState();
+      if (ui.spawnTool) {
+        const p = ground(e.clientX, e.clientY);
+        const t = ui.spawnTool;
+        if (p) void placeAnimals(t.species, p.x, p.z, t.count, t.sex);
+        down = null;
+        return;
+      }
       const id = pick(e.clientX, e.clientY);
       const w = useWorld.getState();
+      if (ui.pairing !== null && id !== null && id !== ui.pairing) {
+        void breedPair(ui.pairing, id);
+        down = null;
+        return;
+      }
       if (id !== null && lastTap.id === id && now - lastTap.t < DOUBLE_MS) w.follow(id);
       else if (id !== null) w.select(id);
       else {
@@ -113,7 +140,7 @@ export function Interaction() {
       el.removeEventListener("contextmenu", onContext);
       if (longTimer) clearTimeout(longTimer);
     };
-  }, [gl, camera]);
+  }, [gl, camera, scene]);
 
   return null;
 }

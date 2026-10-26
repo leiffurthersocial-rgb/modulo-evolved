@@ -1,6 +1,18 @@
 "use client";
 
-import { Crosshair, Dna, GitMerge, MousePointerClick, Scissors, Skull, Trash2 } from "lucide-react";
+import {
+  Crosshair,
+  Dna,
+  GitMerge,
+  Heart,
+  MousePointerClick,
+  Scissors,
+  Skull,
+  Trash2,
+  Utensils,
+} from "lucide-react";
+import { useUi } from "@/state/ui-store";
+import { feedAnimal } from "../animals/actions";
 import { SPECIES } from "@/engine/species/roster";
 import { SLOTS } from "@/engine/genetics/types";
 import { Badge } from "@/ui/badge";
@@ -113,6 +125,10 @@ function Inspector({ d, dead, following }: { d: AgentDetail; dead: string | null
           <Button size="sm" onClick={() => sendToSplice(lab())}>
             <Scissors /> Splice Lab
           </Button>
+          <Button size="sm" onClick={() => void feedAnimal(d.id)}>
+            <Utensils /> Feed
+          </Button>
+          <PairButton id={d.id} />
         </div>
       )}
 
@@ -283,5 +299,19 @@ function Empty({ icon, title, body }: { icon: React.ReactNode; title: string; bo
       <p className="text-sm font-medium text-fg">{title}</p>
       <p className="max-w-64 text-sm text-fg-muted">{body}</p>
     </div>
+  );
+}
+
+function PairButton({ id }: { id: number }) {
+  const pairing = useUi((s) => s.pairing);
+  const active = pairing === id;
+  return (
+    <Button
+      size="sm"
+      variant={active ? "primary" : "secondary"}
+      onClick={() => useUi.getState().setPairing(active ? null : id)}
+    >
+      <Heart /> {active ? "Tap a mate…" : "Breed with…"}
+    </Button>
   );
 }

@@ -1,7 +1,7 @@
 import { Rng } from "../rng/rng";
 import { createNoise2D, fbm } from "../rng/noise";
 
-export type TerrainKind = "island" | "archipelago" | "continent";
+export type TerrainKind = "island" | "archipelago" | "continent" | "mini" | "zoo";
 
 export interface TerrainConfig {
   seed: number;
@@ -14,6 +14,20 @@ export const HALF = WORLD_SIZE / 2;
 export const MAX_HEIGHT = 26;
 /** Roughly 4 m per world unit (used to convert sensory ranges). */
 export const METERS_PER_UNIT = 4;
+/** Half-width of the fenced zoo enclosure. */
+export const ZOO_HALF = 34;
+/** Centre and radius of the zoo pond. */
+export const ZOO_POND = { x: 15, z: -13, r: 9 };
+
+/** Animals stay within ±bounds (the zoo fence, or the edge of the map). */
+export function worldBounds(kind: TerrainKind) {
+  return kind === "zoo" ? ZOO_HALF : HALF - 2;
+}
+
+const smoothstep = (a: number, b: number, x: number) => {
+  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
 
 /**
  * Deterministic heightfield shared by the simulation worker and the renderer.
@@ -100,10 +114,27 @@ export function rawHeightFn(config: TerrainConfig): (x: number, z: number) => nu
     };
   }
 
+  if (config.kind === "zoo") {
+    // A flat fenced paddock with a pond, set in gentle countryside.
+    return (x, z) => {
+      const nx = x / WORLD_SIZE;
+      const nz = z / WORLD_SIZE;
+      const d = Math.sqrt(nx * nx + nz * nz) * 2;
+      const outer = (detail(nx, nz) + 0.35) * (1 - Math.pow(Math.min(1, d), 2.2)) * MAX_HEIGHT * 0.5 - 1.2;
+      let inner = 1.5 + detail(nx * 2, nz * 2) * 0.8;
+      const pond = Math.hypot(x - ZOO_POND.x, z - ZOO_POND.z);
+      inner += (-3 - inner) * smoothstep(ZOO_POND.r, ZOO_POND.r * 0.45, pond);
+      const t = smoothstep(ZOO_HALF + 2, ZOO_HALF + 14, Math.max(Math.abs(x), Math.abs(z)));
+      return inner * (1 - t) + outer * t;
+    };
+  }
+
+  // "mini" is the same island at less than half the size.
+  const shrink = config.kind === "mini" ? 2.3 : 1;
   return (x, z) => {
     const nx = x / WORLD_SIZE;
     const nz = z / WORLD_SIZE;
-    const d = Math.sqrt(nx * nx + nz * nz) * 2;
+    const d = Math.sqrt(nx * nx + nz * nz) * 2 * shrink;
     const falloff = 1 - Math.pow(Math.min(1, d), 2.2);
     return (detail(nx, nz) + 0.35) * falloff * MAX_HEIGHT - 1.2;
   };

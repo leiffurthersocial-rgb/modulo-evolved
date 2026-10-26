@@ -9,13 +9,14 @@ import { computeStats } from "../anatomy/stats";
 import { buildPools, founderGenome, type SpeciesPools } from "../species/founders";
 import { SPECIES, SPECIES_IDS } from "../species/roster";
 import type { SpeciesId } from "../species/types";
-import { HALF, METERS_PER_UNIT, Terrain } from "../world/terrain";
+import { HALF, METERS_PER_UNIT, Terrain, worldBounds } from "../world/terrain";
 import { seasonWarmth, temperatureAt } from "./climate";
 import { Recorder } from "./recorder";
 import { SpatialHash } from "./spatial";
 import { isolation, trackSpeciation } from "./speciation";
 import {
   DEFAULT_CONFIG,
+  normalizeEnv,
   type Agent,
   type AgentState,
   type CatastropheKind,
@@ -92,14 +93,19 @@ export class World {
   notices: { day: number; text: string; kind: "speciation" | "extinction" | "event" }[] = [];
   nextSpeciationCheck = 30;
   vegDt = 0;
+  /** Movement limit (the zoo fence or the map edge). */
+  readonly bounds: number;
+  /** Keeper food in store per species (kJ). */
+  rations = new Map<SpeciesId, number>();
   private firstSex: Sex = "F";
 
   constructor(config: Partial<WorldConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config, env: { ...DEFAULT_CONFIG.env, ...config.env } };
-    this.env = structuredClone(this.config.env);
+    this.env = normalizeEnv(structuredClone(this.config.env));
     this.rng = new Rng(this.config.seed);
     this.alleles = new AlleleFactory();
     this.terrain = new Terrain({ seed: this.config.seed, kind: this.config.terrain });
+    this.bounds = worldBounds(this.config.terrain);
     this.veg = new Vegetation(this.terrain);
     this.veg.updateCapacity(this.env);
     this.veg.fill(0.7);
@@ -160,7 +166,7 @@ export class World {
 
   private habitatOk(id: SpeciesId, x: number, z: number) {
     const h = this.terrain.heightAt(x, z);
-    if (Math.abs(x) > HALF - 4 || Math.abs(z) > HALF - 4) return false;
+    if (Math.abs(x) > this.bounds - 2 || Math.abs(z) > this.bounds - 2) return false;
     const sp = SPECIES[id];
     if (sp.parts.torso.kind === "fish") return h < -1;
     if (id === "frog" || id === "crocodile" || id === "duck") return h > -1.5 && this.nearWater(x, z, 10);
@@ -176,8 +182,8 @@ export class World {
 
   private randomSpot(id: SpeciesId, rng: Rng): [number, number] {
     for (let i = 0; i < 4000; i++) {
-      const x = rng.range(-HALF + 6, HALF - 6);
-      const z = rng.range(-HALF + 6, HALF - 6);
+      const x = rng.range(-this.bounds + 4, this.bounds - 4);
+      const z = rng.range(-this.bounds + 4, this.bounds - 4);
       if (this.habitatOk(id, x, z)) return [x, z];
     }
     return [0, 0];
@@ -250,7 +256,7 @@ export class World {
 
   setEnv(env: EnvSettings) {
     const rateChanged = env.mutationRate !== this.env.mutationRate;
-    this.env = structuredClone(env);
+    this.env = normalizeEnv(structuredClone(env));
     if (rateChanged) this.rates = scaleRates(DEFAULT_RATES, env.mutationRate);
     this.veg.updateCapacity(this.env);
   }
@@ -336,6 +342,136 @@ export class World {
     return ids;
   }
 
+  // ------------------------------------------------------------------ keeper tools
+
+  /** Keeper delivers each species' daily ration (food for N adults); a day's surplus is kept. */
+  private deliverRations(dt: number) {
+    for (const id of SPECIES_IDS) {
+      const n = this.env.provision[id] ?? 0;
+      if (n <= 0) {
+        this.rations.delete(id);
+        continue;
+      }
+      const daily = n * this.adultFmr(id);
+      this.rations.set(id, Math.min(daily * 1.5, (this.rations.get(id) ?? 0) + daily * dt));
+    }
+  }
+
+  private fmrCache = new Map<SpeciesId, number>();
+  /** Field metabolic rate (kJ/day) of a typical wild-type adult of a species. */
+  adultFmr(id: SpeciesId) {
+    let v = this.fmrCache.get(id);
+    if (v === undefined) {
+      const g = founderGenome(id, this.pools, new Rng(7), "F");
+      v = computeStats(computePhenotype(g, id, "F")).fmrKJ;
+      this.fmrCache.set(id, v);
+    }
+    return v;
+  }
+
+  /** Top an animal's energy up to full. */
+  feed(a: Agent) {
+    a.energy = a.maxEnergy;
+    if (a.state === "flee" || a.state === "hunt") a.state = "rest";
+  }
+
+  /** Mate two animals now (ignores season, maturity, cooldowns and caps). Returns the litter. */
+  breedNow(x: Agent, y: Agent): { born: number[]; stillborn: number; error?: string } {
+    if (x.sex === y.sex) return { born: [], stillborn: 0, error: "They are the same sex." };
+    const mother = x.sex === "F" ? x : y;
+    const father = mother === x ? y : x;
+    const fert =
+      mother.species !== father.species && mother.lineage !== father.lineage
+        ? crossFertility(geneticDistance(mother.genome, father.genome))
+        : 1;
+    if (fert <= 0) return { born: [], stillborn: 0, error: "Too distantly related to produce offspring." };
+    if (this.agents.length >= this.config.maxAgents)
+      return { born: [], stillborn: 0, error: `The world is full (${this.config.maxAgents} animals).` };
+    const before = this.totals.stillborn;
+    mother.gestation = {
+      until: this.day,
+      father: father.genome,
+      fatherId: father.id,
+      fatherLineage: father.lineage,
+    };
+    const born = this.giveBirth(mother, true);
+    return { born, stillborn: this.totals.stillborn - before };
+  }
+
+  /** Remove every animal (or every animal of one species) without leaving carcasses. */
+  clear(species?: SpeciesId) {
+    let n = 0;
+    for (const a of this.agents)
+      if (!a.dead && (!species || a.species === species)) {
+        this.kill(a, "culled");
+        n++;
+      }
+    this.agents = this.agents.filter((a) => !a.dead);
+    return n;
+  }
+
+  /** Can a wild animal of this species be put down here? */
+  placementOk(id: SpeciesId, x: number, z: number) {
+    if (Math.abs(x) > this.bounds - 1 || Math.abs(z) > this.bounds - 1) return false;
+    const h = this.terrain.heightAt(x, z);
+    const sp = SPECIES[id];
+    if (sp.parts.torso.kind === "fish") return h < -0.6;
+    if (id === "frog" || id === "crocodile" || id === "duck") return h > -2.5;
+    if (sp.parts.wings) return true;
+    return h > -0.3 && h < 22;
+  }
+
+  /** Put new wild-type animals at a spot (each with its own founder genome). */
+  spawnWild(
+    id: SpeciesId,
+    x: number,
+    z: number,
+    count: number,
+    sex: Sex | "pair",
+  ): { ids: number[]; error?: string } {
+    if (!this.placementOk(id, x, z))
+      return { ids: [], error: `A ${SPECIES[id].name.toLowerCase()} can't live there.` };
+    const n = Math.max(1, Math.min(50, count, this.config.maxAgents - this.agents.length));
+    if (this.agents.length >= this.config.maxAgents)
+      return { ids: [], error: `The world is full (${this.config.maxAgents} animals).` };
+    const rng = this.rng.fork();
+    const ids: number[] = [];
+    const sp = SPECIES[id];
+    for (let k = 0; k < n; k++) {
+      const s: Sex = sex === "pair" ? (k % 2 === 0 ? "F" : "M") : sex;
+      let px = x + rng.normal(0, n > 1 ? 1.5 : 0);
+      let pz = z + rng.normal(0, n > 1 ? 1.5 : 0);
+      if (!this.placementOk(id, px, pz)) [px, pz] = [x, z];
+      const a = this.addAgent({
+        species: id,
+        genome: founderGenome(id, this.pools, rng, s),
+        sex: s,
+        lineage: this.rootLineageOf(id),
+        x: px,
+        z: pz,
+        ageDays: sp.maturityY * 365 * 1.05,
+        generation: 0,
+      });
+      a.breedCooldownUntil = this.day + 2;
+      a.energy = a.maxEnergy * 0.9;
+      this.lineages[a.lineage].everAlive = true;
+      ids.push(a.id);
+    }
+    return { ids };
+  }
+
+  /** Mean generation number of living animals (optionally of one species). */
+  meanGeneration(species?: SpeciesId) {
+    let sum = 0;
+    let n = 0;
+    for (const a of this.agents)
+      if (!a.dead && (!species || a.species === species)) {
+        sum += a.generation;
+        n++;
+      }
+    return n ? sum / n : 0;
+  }
+
   // ------------------------------------------------------------------ main loop
 
   /** Advance the simulation by dt days (dt ≤ ~0.25 for stable chases). */
@@ -349,6 +485,7 @@ export class World {
       this.vegDt = 0;
     }
     const tSea = temperatureAt(this.env, this.events, this.day, 0);
+    this.deliverRations(dt);
 
     for (let i = 0; i < this.agents.length; i++) {
       const a = this.agents[i];
@@ -399,7 +536,7 @@ export class World {
 
   /** Can predator p attack prey q (diet, size and habitat reach)? */
   canEat(p: Agent, q: Agent, allies = 0): boolean {
-    if (q.dead || q.lineage === p.lineage || q.species === p.species) return false;
+    if (!this.env.predation || q.dead || q.lineage === p.lineage || q.species === p.species) return false;
     // Adult flyers escape ground predators by taking off; only nestlings are at risk.
     if (q.st.canFly && !p.st.canFly && this.isMature(q)) return false;
     // Fire, spears and group defence: predators learn to avoid tool-using humans.
@@ -861,7 +998,7 @@ export class World {
     }
   }
 
-  private giveBirth(m: Agent) {
+  private giveBirth(m: Agent, forced = false): number[] {
     const gest = m.gestation!;
     m.gestation = null;
     const sp = SPECIES[m.species];
@@ -870,24 +1007,34 @@ export class World {
     const expected = sp.litter * m.ph.fertility * m.st.fertilityMult * Math.sqrt(condition);
     let n = Math.floor(expected) + (this.rng.chance(expected % 1) ? 1 : 0);
     n = Math.min(n, Math.max(0, this.config.maxAgents - this.agents.length));
+    if (forced && this.agents.length >= this.config.maxAgents) return [];
     // Each species is guaranteed its share of the agent budget and may borrow free space only
     // while the world is not crowded. Local crowding also lowers fecundity.
     const count = this.speciesCount(m.species);
     const cap = this.speciesCap(m.species);
     // Territorial large carnivores can't pack in beyond their share.
     const territorial = sp.maxPreyRatio >= 1 && sp.diet === "carnivore";
-    if (
+    const userCap = this.env.caps[m.species] !== undefined;
+    if (forced) n = Math.max(1, n);
+    else if (userCap) n = Math.min(n, Math.max(0, cap - count));
+    else if (
       count >= cap * (territorial ? 1 : 1.6) ||
       (count >= cap && this.agents.length >= this.config.maxAgents * 0.85)
     )
       n = 0;
-    let crowd = 0;
-    this.hash.query(m.x, m.z, 10, (b) => {
-      if (b.species === m.species) crowd++;
-    });
-    if (crowd > 12 && this.rng.chance(1 - 12 / crowd)) n = Math.max(0, n - 1);
-    if (n <= 0) return;
-    m.energy -= 0.3 * m.maxEnergy * Math.sqrt(n / sp.litter);
+    if (!forced) {
+      let crowd = 0;
+      this.hash.query(m.x, m.z, 10, (b) => {
+        if (b.species === m.species) crowd++;
+      });
+      if (crowd > 12 && this.rng.chance(1 - 12 / crowd)) n = Math.max(0, n - 1);
+    }
+    const born: number[] = [];
+    if (n <= 0) return born;
+    m.energy = Math.max(
+      forced ? 0.25 * m.maxEnergy : -Infinity,
+      m.energy - 0.3 * m.maxEnergy * Math.sqrt(n / sp.litter),
+    );
     const hybridFert =
       gest.fatherLineage === m.lineage ? 1 : crossFertility(geneticDistance(m.genome, gest.father));
     const nestT = temperatureAt(this.env, this.events, this.day, this.terrain.heightAt(m.x, m.z)) + 6;
@@ -923,7 +1070,9 @@ export class World {
       const father = this.byId.get(gest.fatherId);
       if (father) father.offspring++;
       this.totals.births++;
+      born.push(kid.id);
     }
+    return born;
   }
 
   private counts = new Map<SpeciesId, number>();
@@ -943,6 +1092,8 @@ export class World {
    * small-bodied species from monopolising the budget (each agent stands for one animal).
    */
   speciesCap(id: SpeciesId) {
+    const user = this.env.caps[id];
+    if (user !== undefined) return user;
     const total = SPECIES_IDS.reduce((s, k) => s + this.initialCount(k), 0) || 1;
     const share = this.initialCount(id) || 4;
     const sp = SPECIES[id];
@@ -1011,6 +1162,14 @@ export class World {
       a.stamina -= dt * 7 * heat * (1 - 0.75 * Math.min(1, a.ph.sweat));
     } else a.stamina = Math.min(1, a.stamina + dt * 4);
     if (a.stamina < 0) a.stamina = 0;
+
+    // Keeper rations (zoo): hungry animals eat from their species' food store first.
+    const store = this.rations.get(a.species);
+    if (store && store > 0 && a.energy < a.maxEnergy * 0.9) {
+      const take = Math.min(store, a.maxEnergy - a.energy, a.st.fmrKJ * 8 * dt);
+      a.energy += take;
+      this.rations.set(a.species, store - take);
+    }
 
     // Feeding on plants/plankton
     if ((a.state === "eat" || a.state === "forage") && !a.carcass) {
@@ -1118,7 +1277,7 @@ export class World {
   }
 
   canBeAt(a: Pick<Agent, "st" | "flying" | "species">, x: number, z: number) {
-    if (Math.abs(x) > HALF - 2 || Math.abs(z) > HALF - 2) return false;
+    if (Math.abs(x) > this.bounds || Math.abs(z) > this.bounds) return false;
     if (a.flying && a.st.canFly) return true;
     const h = this.terrain.heightAt(x, z);
     if (a.st.aquatic) return h < -0.5;

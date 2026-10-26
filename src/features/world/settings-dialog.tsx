@@ -11,7 +11,7 @@ const OPTIONS: { id: Quality; label: string; note: string }[] = [
   {
     id: "battery",
     label: "Battery saver",
-    note: "No shadows, lower resolution. Cooler and longer battery life.",
+    note: "30 fps, native resolution, no shadows or effects, gentler simulation ticks. Cooler and longer battery life.",
   },
 ];
 

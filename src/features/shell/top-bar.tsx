@@ -1,6 +1,17 @@
 "use client";
 
-import { Command, Compass, FolderOpen, Globe2, Keyboard, Link2, Menu, Settings } from "lucide-react";
+import {
+  BatteryLow,
+  Command,
+  Compass,
+  FolderOpen,
+  Globe2,
+  Keyboard,
+  Link2,
+  Menu,
+  Settings,
+} from "lucide-react";
+import { toggleLowBattery, useSettings } from "@/state/settings-store";
 import { DropdownMenu } from "radix-ui";
 import { copyText, shareUrl } from "@/persistence/share";
 import { useScenario } from "@/sim/scenario-store";
@@ -43,6 +54,7 @@ export function TopBar() {
 
       <div className="pointer-events-auto flex h-14 items-center gap-1 rounded-lg border border-border px-1 shadow-panel glass">
         <WorldMenu />
+        <BatteryToggle />
         <Tooltip content="Command palette" shortcut="mod+k" side="bottom">
           <Button
             data-tour="commands"
@@ -67,6 +79,24 @@ export function TopBar() {
         </Tooltip>
       </div>
     </header>
+  );
+}
+
+function BatteryToggle() {
+  const on = useSettings((s) => s.quality === "battery");
+  return (
+    <Tooltip content={on ? "Low battery mode is on" : "Low battery mode"} side="bottom">
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-pressed={on}
+        aria-label="Low battery mode"
+        onClick={toggleLowBattery}
+        className={on ? "text-warning" : undefined}
+      >
+        <BatteryLow />
+      </Button>
+    </Tooltip>
   );
 }
 

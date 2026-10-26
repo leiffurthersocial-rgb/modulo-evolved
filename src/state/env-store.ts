@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { DEFAULT_ENV, type EnvSettings, type HumanImpact } from "@/engine/sim/types";
+import { DEFAULT_ENV, normalizeEnv, type EnvSettings, type HumanImpact } from "@/engine/sim/types";
+import type { SpeciesId } from "@/engine/species/types";
 
 export type BiomeId = "temperate" | "savanna" | "tundra" | "rainforest" | "desert" | "steppe";
 
@@ -37,6 +38,10 @@ interface EnvState extends EnvSettings {
   applyBiome: (id: BiomeId) => void;
   set: (patch: Partial<EnvSettings>) => void;
   setImpact: (patch: Partial<HumanImpact>) => void;
+  /** Set (or clear with null) a user population cap. */
+  setCap: (id: SpeciesId, cap: number | null) => void;
+  /** Keeper ration for a species, in "enough food for N adults" (0 = none). */
+  setProvision: (id: SpeciesId, n: number) => void;
   load: (env: EnvSettings, biome?: BiomeId | "custom") => void;
   settings: () => EnvSettings;
 }
@@ -47,7 +52,19 @@ export const useEnv = create<EnvState>()((set, get) => ({
   applyBiome: (id) => set({ biome: id, ...BIOMES[id].params }),
   set: (patch) => set({ ...patch, biome: "custom" }),
   setImpact: (patch) => set({ impact: { ...get().impact, ...patch } }),
-  load: (env, biome = "custom") => set({ ...env, impact: { ...env.impact }, biome }),
+  setCap: (id, cap) => {
+    const caps = { ...get().caps };
+    if (cap === null) delete caps[id];
+    else caps[id] = cap;
+    set({ caps });
+  },
+  setProvision: (id, n) => {
+    const provision = { ...get().provision };
+    if (n <= 0) delete provision[id];
+    else provision[id] = n;
+    set({ provision });
+  },
+  load: (env, biome = "custom") => set({ ...normalizeEnv(env), biome }),
   settings: () => {
     const s = get();
     return {
@@ -59,6 +76,9 @@ export const useEnv = create<EnvState>()((set, get) => ({
       uv: s.uv,
       mutationRate: s.mutationRate,
       impact: { ...s.impact },
+      predation: s.predation,
+      provision: { ...s.provision },
+      caps: { ...s.caps },
     };
   },
 }));

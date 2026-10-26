@@ -4,7 +4,7 @@
 
 Eighteen real species, humans among them, live on a procedurally generated island. Each animal carries a diploid genome of 59 loci on a linkage map; its anatomy, physiology and behavior are expressed from that genome. Energy flows from a regrowing vegetation grid through herbivores to predators. Natural and sexual selection, drift, mutation and migration act on real alleles, and new species split off when populations diverge. You can pause at any time to edit genomes, run Punnett crosses, or splice body parts between species into chimeras whose physics honestly constrain what they can do.
 
-![The world view with the Environment panel open](docs/screenshots/world.png)
+![The world view with the Climate panel open](docs/screenshots/world.png)
 
 <p>
   <img src="docs/screenshots/closeup.png" width="49%" alt="Following a red deer, with the inspector showing anatomy-derived performance" />
@@ -38,22 +38,36 @@ Eighteen real species, humans among them, live on a procedurally generated islan
   - Autosave to IndexedDB, plus named saves.
   - `.modulo` file export and import.
   - Compressed share links for worlds and genomes.
-- **Scenarios:** Temperate Island, African Savanna, Archipelago Speciation, Ice Age, Human Arrival (megafauna overkill), Hardy–Weinberg Lab and Founder Effect.
+- **Hands-on keeper tools** (the **Animals** panel, `B`):
+  - Tap the ground to place animals of any species.
+  - Feed one animal or all of them, and remove a species or clear the whole island.
+  - Set a maximum population for any species.
+  - Set daily rations such as "enough food for 10 humans".
+  - Pick two animals and breed them on the spot.
+  - Fast-forward 1, 5 or 10 generations.
+- **Breeding Zoo:** a fenced paddock with a pond. The keeper feeds the animals, nobody gets eaten, and you decide who breeds. **Mini Island** is a small, battery-friendly world.
+- **Low battery mode:** the battery button in the top bar.
+  - Caps rendering at 30 fps at native resolution, with no shadows or effects.
+  - Slows the simulation's ticks.
+- **Scenarios:** Breeding Zoo, Mini Island, Temperate Island, African Savanna, Archipelago Speciation, Ice Age, Human Arrival (megafauna overkill), Hardy–Weinberg Lab and Founder Effect.
+
+![Breeding Zoo: placing animals, with daily rations in the Animals panel](docs/screenshots/zoo.png)
 
 The science, the simplifications and the data sources are documented in [docs/SCIENCE.md](docs/SCIENCE.md).
 
 ## Controls
 
-|                           | Touch                                 | Keyboard                    |
-| ------------------------- | ------------------------------------- | --------------------------- |
-| Orbit / pan / zoom        | 1-finger drag / 2-finger drag / pinch | Arrows / WASD / `=` `-`     |
-| Select / follow / menu    | Tap / double-tap / long-press         | `F` follows, `Esc` clears   |
-| Play / pause, step, speed | Time dock                             | `Space`, `.`, `[` `]`       |
-| Workspaces                | Left rail                             | `1`–`5`                     |
-| Panels                    | Dock tabs                             | `I` `E` `C`, `\`            |
-| Undo / redo (editor)      | Toolbar                               | `⌘Z`, `⇧⌘Z`                 |
-| Save                      | World menu                            | `⌘S`                        |
-| Everything else           | Commands button                       | `⌘K`, `?` for all shortcuts |
+|                           | Touch                                 | Keyboard                                    |
+| ------------------------- | ------------------------------------- | ------------------------------------------- |
+| Orbit / pan / zoom        | 1-finger drag / 2-finger drag / pinch | Arrows / WASD / `=` `-`                     |
+| Select / follow / menu    | Tap / double-tap / long-press         | `F` follows, `Esc` clears                   |
+| Place / breed / feed      | Animals panel, inspector, long-press  | `B` opens the panel, `G` skips a generation |
+| Play / pause, step, speed | Time dock                             | `Space`, `.`, `[` `]`                       |
+| Workspaces                | Left rail                             | `1`–`5`                                     |
+| Panels                    | Dock tabs                             | `I` `E` `C`, `\`                            |
+| Undo / redo (editor)      | Toolbar                               | `⌘Z`, `⇧⌘Z`                                 |
+| Save                      | World menu                            | `⌘S`                                        |
+| Everything else           | Commands button                       | `⌘K`, `?` for all shortcuts                 |
 
 Tip: in Safari on iPad, choose **Share → Add to Home Screen** for a fullscreen, app-like experience. The guided tour can be replayed from the World menu.
 
@@ -70,13 +84,13 @@ Requires Node 22+ and pnpm 10.
 
 ### URL parameters
 
-| Parameter           | Effect                                                      |
-| ------------------- | ----------------------------------------------------------- |
-| `?scenario=savanna` | Start a scenario (`temperate`, `savanna`, `archipelago`, …) |
-| `?seed=42`          | World seed (same seed and browser engine → same run)        |
-| `?agents=300`       | Agent budget (lower for older devices)                      |
-| `?nowelcome`        | Skip the welcome dialog (used by tests)                     |
-| `#m=…`              | Share payload (world settings or a genome), made by the app |
+| Parameter       | Effect                                                                     |
+| --------------- | -------------------------------------------------------------------------- |
+| `?scenario=zoo` | Start a scenario (`zoo`, `mini`, `temperate`, `savanna`, `archipelago`, …) |
+| `?seed=42`      | World seed (same seed and browser engine → same run)                       |
+| `?agents=300`   | Agent budget (lower for older devices)                                     |
+| `?nowelcome`    | Skip the welcome dialog (used by tests)                                    |
+| `#m=…`          | Share payload (world settings or a genome), made by the app                |
 
 `/dev/gallery` is an internal QA page showing every species and some chimeras side by side. In the browser console, `window.__modulo` exposes the world store, the UI store and the simulation client for debugging.
 

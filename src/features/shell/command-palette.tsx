@@ -19,6 +19,16 @@ const GROUP_ORDER: CommandGroup[] = [
   "Help",
 ];
 
+/**
+ * Whether the last interaction was a key press. Opening the palette by touch shouldn't focus the
+ * search field: on iPad that pops up the on-screen keyboard, which covers most of the list.
+ */
+let lastInputKeyboard = false;
+if (typeof window !== "undefined") {
+  window.addEventListener("keydown", () => (lastInputKeyboard = true), true);
+  window.addEventListener("pointerdown", () => (lastInputKeyboard = false), true);
+}
+
 export function CommandPalette() {
   const open = useUi((s) => s.paletteOpen);
   const setOpen = useUi((s) => s.setPaletteOpen);
@@ -30,17 +40,22 @@ export function CommandPalette() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent title="Command palette" hideClose className="max-w-[560px]">
+      <DialogContent
+        title="Command palette"
+        hideClose
+        className="max-w-[560px]"
+        onOpenAutoFocus={(e) => !lastInputKeyboard && e.preventDefault()}
+      >
         <Cmdk loop filter={rankCommand} className="flex min-h-0 flex-col">
           <div className="flex items-center gap-3 border-b border-border px-4">
             <Search className="size-[18px] text-fg-subtle" aria-hidden />
             <Cmdk.Input
-              autoFocus
+              autoFocus={lastInputKeyboard}
               placeholder="Type a command or search…"
               className="h-14 flex-1 bg-transparent text-base text-fg outline-none placeholder:text-fg-subtle"
             />
           </div>
-          <Cmdk.List className="max-h-[min(420px,56vh)] overflow-y-auto overscroll-contain p-2">
+          <Cmdk.List className="max-h-[calc(86vh-58px)] touch-pan-y overflow-y-auto overscroll-contain p-2 [-webkit-overflow-scrolling:touch]">
             <Cmdk.Empty className="px-3 py-8 text-center text-sm text-fg-subtle">
               No matching commands.
             </Cmdk.Empty>
