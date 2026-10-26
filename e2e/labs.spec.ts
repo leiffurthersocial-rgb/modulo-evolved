@@ -30,3 +30,10 @@ test("cross lab: Punnett square and a bred litter", async ({ page }) => {
   await page.getByRole("button", { name: /Breed litter/ }).click();
   await expect(page.getByText(/viability \d+%/).first()).toBeVisible();
 });
+
+test("splice lab: a preset chimera shows derived trade-offs", async ({ page }) => {
+  await page.getByRole("button", { name: "Splice Lab" }).click();
+  await page.getByRole("button", { name: "Human with hawk wings" }).first().click();
+  await expect(page.getByText(/Too heavy to fly/)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("grounded", { exact: true })).toBeVisible();
+});

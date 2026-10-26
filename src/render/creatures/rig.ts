@@ -803,7 +803,7 @@ export function buildRig(b: RigInput): RigPart[] {
       add(GEO.blade, {
         pivot: biped ? [s * 0.12, hipY + 0.3, -0.05] : onTorso(s * 0.6, 0.35, 0.2),
         rot: eulerQ(0, 0, (-s * Math.PI) / 2),
-        rotAlt: eulerQ(-Math.PI / 2 - 0.12, 0, s * 0.12),
+        rotAlt: biped ? eulerQ(Math.PI - 0.35, 0, s * 0.3) : eulerQ(-Math.PI / 2 - 0.12, 0, s * 0.12),
         scale: [chord, half, 0.8],
         color: mix(body, body2, 0.15),
         pattern: pat * 0.5,
