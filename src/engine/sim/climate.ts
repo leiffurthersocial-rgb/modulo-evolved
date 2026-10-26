@@ -30,7 +30,7 @@ export function eventTempOffset(events: readonly WorldEvent[], day: number) {
     const len = e.end - e.start;
     if (e.kind === "iceAge") {
       const ramp = Math.min(smooth((day - e.start) / 120), smooth((e.end - day) / 120));
-      off -= 13 * ramp * (len > 0 ? 1 : 0);
+      off -= 9 * ramp * (len > 0 ? 1 : 0);
     } else if (e.kind === "meteor") {
       // Impact winter: dust and soot block sunlight, decaying over about a year.
       off -= 9 * Math.exp(-(day - e.start) / 120);

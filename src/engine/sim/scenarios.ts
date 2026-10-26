@@ -53,7 +53,7 @@ export const SCENARIOS: Scenario[] = [
     lesson:
       "Lions need large herds. Crocodile sex ratios follow nest temperature; humans out-run prey in the heat.",
     terrain: "continent",
-    env: env({ temperature: 26, humidity: 0.45, seasonality: 0.35, uv: 0.85 }),
+    env: env({ temperature: 26, humidity: 0.55, food: 1.4, seasonality: 0.35, uv: 0.85 }),
     counts: {
       zebra: 110,
       elephant: 8,
@@ -77,7 +77,7 @@ export const SCENARIOS: Scenario[] = [
     lesson:
       "Geographic isolation + drift + mutation → allopatric speciation. Check the Phylogeny view as lineages split.",
     terrain: "archipelago",
-    env: env({ temperature: 16, humidity: 0.7, seasonality: 0.4, mutationRate: 4 }),
+    env: env({ temperature: 16, humidity: 0.7, seasonality: 0.4, mutationRate: 6 }),
     counts: {
       rabbit: 70,
       deer: 30,
@@ -96,9 +96,10 @@ export const SCENARIOS: Scenario[] = [
     id: "iceage",
     name: "Ice Age",
     tagline: "A cold steppe plunges into a glacial period after two months.",
-    lesson: "Selection for fat, fur and cold tolerance; Bergmann's rule; bottlenecks and extinctions.",
+    lesson:
+      "Selection for fat, fur and cold tolerance; Bergmann's rule; bottlenecks and extinctions. Not everyone makes it.",
     terrain: "continent",
-    env: env({ temperature: 4, humidity: 0.5, seasonality: 0.8, uv: 0.2 }),
+    env: env({ temperature: 9, humidity: 0.55, food: 1.2, seasonality: 0.7, uv: 0.2 }),
     counts: {
       deer: 50,
       wolf: 8,

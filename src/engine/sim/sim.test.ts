@@ -36,7 +36,7 @@ describe("world simulation", () => {
     const alive = new Set(w.agents.map((a) => a.species));
     expect(alive.size).toBeGreaterThanOrEqual(11);
     expect(w.totals.births).toBeGreaterThan(100);
-    expect(w.deathCauses.predation).toBeGreaterThan(20);
+    expect(w.deathCauses.predation).toBeGreaterThan(5);
     expect(w.agents.length).toBeLessThanOrEqual(w.config.maxAgents);
   }, 120_000);
 

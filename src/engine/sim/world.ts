@@ -13,7 +13,7 @@ import { HALF, METERS_PER_UNIT, Terrain } from "../world/terrain";
 import { seasonWarmth, temperatureAt } from "./climate";
 import { Recorder } from "./recorder";
 import { SpatialHash } from "./spatial";
-import { trackSpeciation } from "./speciation";
+import { isolation, trackSpeciation } from "./speciation";
 import {
   DEFAULT_CONFIG,
   type Agent,
@@ -263,7 +263,7 @@ export class World {
       this.notice("Drought: rainfall collapses for ~7 months.", "event");
     } else if (kind === "iceAge") {
       this.events.push({ kind, start: d, end: d + 730 });
-      this.notice("Ice age: temperatures drop ~13 °C for two years.", "event");
+      this.notice("Ice age: temperatures drop ~9 °C for two years.", "event");
     } else if (kind === "plague") {
       this.events.push({ kind, start: d, end: d + 60 });
       for (const a of this.agents) if (this.rng.chance(0.15)) a.infected = 8;
@@ -400,6 +400,8 @@ export class World {
   /** Can predator p attack prey q (diet, size and habitat reach)? */
   canEat(p: Agent, q: Agent, allies = 0): boolean {
     if (q.dead || q.lineage === p.lineage || q.species === p.species) return false;
+    // Adult flyers escape ground predators by taking off; only nestlings are at risk.
+    if (q.st.canFly && !p.st.canFly && this.isMature(q)) return false;
     // Fire, spears and group defence: predators learn to avoid tool-using humans.
     if (q.species === "human" && q.culture > 0.25) return false;
     if (p.st.meatEff < 0.5 || p.ph.aggression < 0.2) return false;
@@ -451,7 +453,7 @@ export class World {
       a.energy > 0.5 * a.maxEnergy &&
       this.rng.chance(this.breedingPropensity(a));
     const wantsHunt =
-      hunger > 0.5 &&
+      hunger > (sp.diet === "omnivore" ? 0.65 : 0.5) &&
       a.st.meatEff >= 0.5 &&
       a.ph.aggression >= 0.2 &&
       (sp.maxPreyRatio > 0 || a.st.meatEff >= 0.8);
@@ -491,7 +493,10 @@ export class World {
       this.hash.query(a.x, a.z, sense, (b, d2) => {
         if (b === a || b.dead || b.sex === a.sex || b.species !== a.species || !this.isMature(b)) return;
         const d = Math.sqrt(d2) + 1e-3;
-        const fert = b.lineage === a.lineage ? 1 : crossFertility(geneticDistance(a.genome, b.genome));
+        const fert =
+          b.lineage === a.lineage
+            ? 1
+            : crossFertility(geneticDistance(a.genome, b.genome)) * isolation(this, a.lineage, b.lineage);
         if (fert <= 0) return;
         // Female choice: ornament weighted by choosiness (Fisherian sexual selection).
         const orn = (b.ph.ornament + 0.05) ** (3 * a.ph.choosiness);
@@ -698,7 +703,8 @@ export class World {
 
   /** Foraging efficiency on background fauna: big predators can't live on insects and mice. */
   faunaEfficiency(a: Agent) {
-    return Math.min(1, Math.max(0.05, (10 / a.ph.massKg) ** 0.6)) * Math.max(0.3, a.st.meatEff);
+    // Includes unsimulated medium prey (gazelles, rodents, small fish) for large carnivores.
+    return Math.min(1, Math.max(0.12, (10 / a.ph.massKg) ** 0.4)) * Math.max(0.3, a.st.meatEff);
   }
 
   private foodRichness(a: Agent, x: number, z: number) {
@@ -765,7 +771,10 @@ export class World {
         return;
       }
       if (Math.hypot(m.x - a.x, m.z - a.z) < 2.5) {
-        const fert = m.lineage === a.lineage ? 1 : crossFertility(geneticDistance(a.genome, m.genome));
+        const fert =
+          m.lineage === a.lineage
+            ? 1
+            : crossFertility(geneticDistance(a.genome, m.genome)) * isolation(this, a.lineage, m.lineage);
         if (fert > 0 && this.rng.chance(fert)) {
           const g = SPECIES[a.species].gestationD;
           a.gestation = {
@@ -820,7 +829,7 @@ export class World {
       0.6 * Math.log10(q.ph.massKg * 100 + 1) +
       q.ph.aggression +
       (q.st.biteN > 2000 ? 0.5 : 0) +
-      (q.flying ? 1 : 0) +
+      (q.flying ? 1 : q.st.canFly ? 0.8 : 0) +
       0.12 * Math.min(group, 10) * q.ph.sociality +
       (q.species === "human" ? 2 * q.culture : 0);
     const p01 =
@@ -865,7 +874,13 @@ export class World {
     // while the world is not crowded. Local crowding also lowers fecundity.
     const count = this.speciesCount(m.species);
     const cap = this.speciesCap(m.species);
-    if (count >= cap * 1.6 || (count >= cap && this.agents.length >= this.config.maxAgents * 0.85)) n = 0;
+    // Territorial large carnivores can't pack in beyond their share.
+    const territorial = sp.maxPreyRatio >= 1 && sp.diet === "carnivore";
+    if (
+      count >= cap * (territorial ? 1 : 1.6) ||
+      (count >= cap && this.agents.length >= this.config.maxAgents * 0.85)
+    )
+      n = 0;
     let crowd = 0;
     this.hash.query(m.x, m.z, 10, (b) => {
       if (b.species === m.species) crowd++;
@@ -930,7 +945,9 @@ export class World {
   speciesCap(id: SpeciesId) {
     const total = SPECIES_IDS.reduce((s, k) => s + this.initialCount(k), 0) || 1;
     const share = this.initialCount(id) || 4;
-    return Math.max(8, Math.round((share / total) * this.config.maxAgents));
+    const sp = SPECIES[id];
+    const minCap = sp.maxPreyRatio >= 1 && sp.diet === "carnivore" ? 4 : 8;
+    return Math.max(minCap, Math.round((share / total) * this.config.maxAgents));
   }
 
   private removeQuietly(a: Agent) {
@@ -1052,7 +1069,9 @@ export class World {
 
     // Mortality hazards (per day)
     const ageY = (this.day - a.birthDay) / 365;
-    let hazard = 0.0004 * Math.exp(6 * (ageY / a.ph.lifespanY - 1));
+    // Gompertz senescence plus age-independent extrinsic mortality (accidents, parasites):
+    // short-lived species turn over fast (rabbits lose ~20–30% of adults per year).
+    let hazard = 0.0004 * Math.exp(6 * (ageY / a.ph.lifespanY - 1)) + 1 / (365 * a.ph.lifespanY * 0.9);
     if (ageY < sp.maturityY * 0.3) hazard += 0.0015;
     if (this.rng.chance(hazard * dt)) return this.kill(a, "age");
     if (sp.endotherm) {

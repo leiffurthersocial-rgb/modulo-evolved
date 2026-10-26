@@ -71,12 +71,13 @@ export function rawHeightFn(config: TerrainConfig): (x: number, z: number) => nu
 
   if (config.kind === "archipelago") {
     const rng = new Rng(config.seed ^ 0xa4c1);
+    // A central island and four outer ones, separated by deep channels (no land bridges).
     const centres = Array.from({ length: 5 }, (_, k) => {
-      const ang = (k / 5) * Math.PI * 2 + rng.range(-0.3, 0.3);
-      const r = k === 0 ? 0 : rng.range(0.22, 0.32);
-      return { x: Math.cos(ang) * r, z: Math.sin(ang) * r, s: rng.range(0.11, 0.16) };
+      const ang = (k / 4) * Math.PI * 2 + rng.range(-0.25, 0.25);
+      const r = k === 0 ? 0 : rng.range(0.31, 0.35);
+      return { x: Math.cos(ang) * r, z: Math.sin(ang) * r, s: rng.range(0.1, 0.12) };
     });
-    centres[0] = { x: 0, z: 0, s: 0.12 };
+    centres[0] = { x: 0, z: 0, s: 0.11 };
     return (x, z) => {
       const nx = x / WORLD_SIZE;
       const nz = z / WORLD_SIZE;
