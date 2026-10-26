@@ -5,6 +5,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { AdaptiveDpr, CameraControls, PerformanceMonitor } from "@react-three/drei";
 import { useWorld } from "@/sim/world-store";
 import { renderProfile, useSettings } from "@/state/settings-store";
+import { useUi } from "@/state/ui-store";
 import { sim } from "@/sim/client";
 import { Creatures } from "./creatures/creatures";
 import { renderAgents } from "./creatures/render-state";
@@ -25,8 +26,11 @@ export default function WorldScene() {
   const quality = useSettings((s) => s.quality);
   const degraded = useSettings((s) => s.degraded);
   const profile = renderProfile(quality, degraded);
+  // Behind a lab workspace the world shows as a blurred still; the worker keeps simulating.
+  const visible = useUi((s) => s.mode === "world");
   return (
     <Canvas
+      frameloop={visible ? "always" : "demand"}
       shadows={profile.shadows}
       dpr={profile.dpr}
       camera={{ position: [...HOME.pos], fov: 45, near: 0.3, far: 1400 }}
